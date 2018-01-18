@@ -1,6 +1,7 @@
 import Promise from '@lvchengbin/promise';
-import EventEmitter from './eventemitter';
-import checks from './checks';
+import EventEmitter from '@lvchengbin/event-emitter';
+import isFunction from '@lvchengbin/is/src/function';
+import isPromise from '@lvchengbin/is/src/promise';
 
 function config() {
     return {
@@ -9,6 +10,8 @@ function config() {
         index : 0,
         steps : [],
         busy : false,
+        suspended : false,
+        suspendTimeout : null,
         promise : Promise.resolve()
     };
 }
@@ -18,26 +21,18 @@ function config() {
  */
 
 class Sequence extends EventEmitter {
-    constructor( autorun = true, steps = [] ) {
+    constructor( steps, options = {} ) {
         super();
-        this.$alias( 'on', '$on' );
-        this.$alias( 'once', '$once' );
-        this.$alias( 'emit', '$emit' );
-        this.$alias( 'removeListener', '$removeListener' );
-        this.$alias( 'removeAllListeners', '$removeAllListeners' );
-
-        if( !checks.boolean( autorun ) ) {
-            steps = autorun;
-            autorun = true;
-        }
 
         this.__resolve = null;
+        this.running = false;
+        this.interval = options.interval || 0;
 
         Object.assign( this, config() );
 
-        this.running = false;
-        this.append( steps );
-        autorun !== false && setTimeout( () => {
+        steps && this.append( steps );
+
+        options.autorun !== false && setTimeout( () => {
             this.run();
         }, 0 );
     }
@@ -46,31 +41,37 @@ class Sequence extends EventEmitter {
      * to append new steps to the sequence
      */
     append( steps ) {
-        if( checks.function( steps ) ) {
+        const dead = this.index >= this.steps.length;
+
+        if( isFunction( steps ) ) {
             this.steps.push( steps );
         } else {
             for( let step of steps ) {
                 this.steps.push( step );
             }
         }
-        this.running && this.next();
+        this.running && dead && this.next( true );
     }
 
     retry() {
         this.index--;
-        this.next();
     }
 
     clear() {
         Object.assign( this, config() );
     }
 
-    next() {
+    next( inner = false ) {
+        if( !inner && this.running ) {
+            console.warn( 'Please do not call next() while the sequence is running.' );
+            return Promise.reject( false );
+        }
+
         /**
          * If there is a step that is running,
          * return the promise instance of the running step.
          */
-        if( this.busy ) this.promise;
+        if( this.busy || this.suspended ) return this.promise;
 
         /**
          * If already reached the end of the sequence,
@@ -91,7 +92,7 @@ class Sequence extends EventEmitter {
              * if the step function doesn't return a promise instance,
              * create a resolved promise instance with the returned value as its value
              */
-            if( !checks.promise( promise ) ) {
+            if( !isPromise( promise ) ) {
                 promise = Promise.resolve( promise );
             }
             return promise.then( value => {
@@ -120,7 +121,9 @@ class Sequence extends EventEmitter {
                 if( !this.steps[ this.index ] ) {
                     this.emit( 'end', this.results, this );
                 } else {
-                    this.running && this.next();
+                    setTimeout( () => {
+                        this.running && this.next( true ); 
+                    }, this.interval );
                 }
                 return result;
             } );
@@ -130,19 +133,28 @@ class Sequence extends EventEmitter {
     run() {
         if( this.running ) return;
         this.running = true;
-        this.next();
+        this.next( true );
     }
 
     stop() {
         this.running = false;
+    }
+
+    suspend( duration = 1000 ) {
+        this.suspended = true;
+        this.suspendTimeout && clearTimeout( this.suspendTimeout );
+        this.suspendTimeout = setTimeout( () => {
+            this.suspended = false;
+            this.running && this.next( true );
+        }, duration );
     }
 }
 
 Sequence.SUCCEEDED = 1;
 Sequence.FAILED = 0;
 
-Sequence.all = ( steps ) => {
-    const sequence = new Sequence( steps );
+Sequence.all = ( steps, interval = 0 ) => {
+    const sequence = new Sequence( steps, { interval } );
     return new Promise( ( resolve, reject ) => {
         sequence.on( 'end', results => {
             resolve( results );
@@ -154,8 +166,8 @@ Sequence.all = ( steps ) => {
     } );
 };
 
-Sequence.chain = ( steps ) => {
-    const sequence = new Sequence( steps );
+Sequence.chain = ( steps, interval = 0 ) => {
+    const sequence = new Sequence( steps, { interval } );
     return new Promise( resolve => {
         sequence.on( 'end', results => {
             resolve( results );

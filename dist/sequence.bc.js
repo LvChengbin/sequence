@@ -1,7 +1,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 	typeof define === 'function' && define.amd ? define(factory) :
-	(global.Promise = factory());
+	(global.Sequence = factory());
 }(this, (function () { 'use strict';
 
 var checks = {
@@ -365,24 +365,21 @@ function promiseReject(promise, value) {
     promiseExecute(promise);
 }
 
-var checks$2 = {
-    string: function string(s) {
-        return typeof s === 'string' || s instanceof String;
-    },
-    function: function _function(f) {
-        var type = {}.toString.call(f).toLowerCase();
-        return type === '[object function]' || type === '[object asyncfunction]';
-    },
-    promise: function promise(p) {
-        return p && checks$2.function(p.then);
-    },
-    boolean: function boolean(s) {
-        return typeof s === 'boolean';
-    },
-    regexp: function regexp(obj) {
-        return {}.toString.call(obj).toLowerCase() === '[object regexp]';
-    }
-};
+var isString = (function (str) {
+  return typeof str === 'string' || str instanceof String;
+});
+
+var isAsyncFunction = (function (fn) {
+  return {}.toString.call(fn) === '[object AsyncFunction]';
+});
+
+var isFunction = (function (fn) {
+  return {}.toString.call(fn) === '[object Function]' || isAsyncFunction(fn);
+});
+
+var isRegExp = (function (reg) {
+  return {}.toString.call(reg) === '[object RegExp]';
+});
 
 var EventEmitter = function () {
     function EventEmitter() {
@@ -392,20 +389,20 @@ var EventEmitter = function () {
     }
 
     createClass(EventEmitter, [{
-        key: '$alias',
-        value: function $alias(name, to) {
+        key: 'alias',
+        value: function alias(name, to) {
             this[name] = this[to].bind(this);
         }
     }, {
-        key: '$on',
-        value: function $on(evt, handler) {
+        key: 'on',
+        value: function on(evt, handler) {
             var listeners = this.__listeners;
             listeners[evt] ? listeners[evt].push(handler) : listeners[evt] = [handler];
             return this;
         }
     }, {
-        key: '$once',
-        value: function $once(evt, handler) {
+        key: 'once',
+        value: function once(evt, handler) {
             var _this = this;
 
             var _handler = function _handler() {
@@ -414,13 +411,13 @@ var EventEmitter = function () {
                 }
 
                 handler.apply(_this, args);
-                _this.$removeListener(evt, _handler);
+                _this.removeListener(evt, _handler);
             };
-            return this.$on(evt, _handler);
+            return this.on(evt, _handler);
         }
     }, {
-        key: '$removeListener',
-        value: function $removeListener(evt, handler) {
+        key: 'removeListener',
+        value: function removeListener(evt, handler) {
             var listeners = this.__listeners,
                 handlers = listeners[evt];
 
@@ -441,8 +438,8 @@ var EventEmitter = function () {
             return this;
         }
     }, {
-        key: '$emit',
-        value: function $emit(evt) {
+        key: 'emit',
+        value: function emit(evt) {
             var handlers = this.__listeners[evt];
             if (handlers) {
                 for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
@@ -450,23 +447,25 @@ var EventEmitter = function () {
                 }
 
                 for (var i = 0, l = handlers.length; i < l; i += 1) {
-                    handlers[i] && handlers[i].apply(handlers, args);
+                    var _handlers$i;
+
+                    handlers[i] && (_handlers$i = handlers[i]).call.apply(_handlers$i, [this].concat(args));
                 }
                 return true;
             }
             return false;
         }
     }, {
-        key: '$removeAllListeners',
-        value: function $removeAllListeners(rule) {
+        key: 'removeAllListeners',
+        value: function removeAllListeners(rule) {
             var checker = void 0;
-            if (checks$2.string(rule)) {
+            if (isString(rule)) {
                 checker = function checker(name) {
                     return rule === name;
                 };
-            } else if (checks$2.function(rule)) {
+            } else if (isFunction(rule)) {
                 checker = rule;
-            } else if (checks$2.regexp(rule)) {
+            } else if (isRegExp(rule)) {
                 checker = function checker(name) {
                     rule.lastIndex = 0;
                     return rule.test(name);
@@ -485,6 +484,18 @@ var EventEmitter = function () {
     return EventEmitter;
 }();
 
+var isAsyncFunction$1 = (function (fn) {
+  return {}.toString.call(fn) === '[object AsyncFunction]';
+});
+
+var isFunction$1 = (function (fn) {
+  return {}.toString.call(fn) === '[object Function]' || isAsyncFunction$1(fn);
+});
+
+var isPromise = (function (p) {
+  return p && isFunction$1(p.then);
+});
+
 function config() {
     return {
         promises: [],
@@ -492,6 +503,8 @@ function config() {
         index: 0,
         steps: [],
         busy: false,
+        suspended: false,
+        suspendTimeout: null,
         promise: Promise$1.resolve()
     };
 }
@@ -503,31 +516,21 @@ function config() {
 var Sequence = function (_EventEmitter) {
     inherits(Sequence, _EventEmitter);
 
-    function Sequence() {
-        var autorun = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
-        var steps = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+    function Sequence(steps) {
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         classCallCheck(this, Sequence);
 
         var _this = possibleConstructorReturn(this, (Sequence.__proto__ || Object.getPrototypeOf(Sequence)).call(this));
 
-        _this.$alias('on', '$on');
-        _this.$alias('once', '$once');
-        _this.$alias('emit', '$emit');
-        _this.$alias('removeListener', '$removeListener');
-        _this.$alias('removeAllListeners', '$removeAllListeners');
-
-        if (!checks$2.boolean(autorun)) {
-            steps = autorun;
-            autorun = true;
-        }
-
         _this.__resolve = null;
+        _this.running = false;
+        _this.interval = options.interval || 0;
 
         Object.assign(_this, config());
 
-        _this.running = false;
-        _this.append(steps);
-        autorun !== false && setTimeout(function () {
+        steps && _this.append(steps);
+
+        options.autorun !== false && setTimeout(function () {
             _this.run();
         }, 0);
         return _this;
@@ -541,7 +544,9 @@ var Sequence = function (_EventEmitter) {
     createClass(Sequence, [{
         key: 'append',
         value: function append(steps) {
-            if (checks$2.function(steps)) {
+            var dead = this.index >= this.steps.length;
+
+            if (isFunction$1(steps)) {
                 this.steps.push(steps);
             } else {
                 var _iteratorNormalCompletion = true;
@@ -569,13 +574,12 @@ var Sequence = function (_EventEmitter) {
                     }
                 }
             }
-            this.running && this.next();
+            this.running && dead && this.next(true);
         }
     }, {
         key: 'retry',
         value: function retry() {
             this.index--;
-            this.next();
         }
     }, {
         key: 'clear',
@@ -587,11 +591,18 @@ var Sequence = function (_EventEmitter) {
         value: function next() {
             var _this2 = this;
 
+            var inner = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+            if (!inner && this.running) {
+                console.warn('Please do not call next() while the sequence is running.');
+                return Promise$1.reject(false);
+            }
+
             /**
              * If there is a step that is running,
              * return the promise instance of the running step.
              */
-            if (this.busy) this.promise;
+            if (this.busy || this.suspended) return this.promise;
 
             /**
              * If already reached the end of the sequence,
@@ -608,7 +619,7 @@ var Sequence = function (_EventEmitter) {
                  * if the step function doesn't return a promise instance,
                  * create a resolved promise instance with the returned value as its value
                  */
-                if (!checks$2.promise(promise)) {
+                if (!isPromise(promise)) {
                     promise = Promise$1.resolve(promise);
                 }
                 return promise.then(function (value) {
@@ -637,7 +648,9 @@ var Sequence = function (_EventEmitter) {
                     if (!_this2.steps[_this2.index]) {
                         _this2.emit('end', _this2.results, _this2);
                     } else {
-                        _this2.running && _this2.next();
+                        setTimeout(function () {
+                            _this2.running && _this2.next(true);
+                        }, _this2.interval);
                     }
                     return result;
                 });
@@ -648,12 +661,26 @@ var Sequence = function (_EventEmitter) {
         value: function run() {
             if (this.running) return;
             this.running = true;
-            this.next();
+            this.next(true);
         }
     }, {
         key: 'stop',
         value: function stop() {
             this.running = false;
+        }
+    }, {
+        key: 'suspend',
+        value: function suspend() {
+            var _this3 = this;
+
+            var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
+
+            this.suspended = true;
+            this.suspendTimeout && clearTimeout(this.suspendTimeout);
+            this.suspendTimeout = setTimeout(function () {
+                _this3.suspended = false;
+                _this3.running && _this3.next(true);
+            }, duration);
         }
     }]);
     return Sequence;
@@ -663,7 +690,9 @@ Sequence.SUCCEEDED = 1;
 Sequence.FAILED = 0;
 
 Sequence.all = function (steps) {
-    var sequence = new Sequence(steps);
+    var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+    var sequence = new Sequence(steps, { interval: interval });
     return new Promise$1(function (resolve, reject) {
         sequence.on('end', function (results) {
             resolve(results);
@@ -676,7 +705,9 @@ Sequence.all = function (steps) {
 };
 
 Sequence.chain = function (steps) {
-    var sequence = new Sequence(steps);
+    var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+    var sequence = new Sequence(steps, { interval: interval });
     return new Promise$1(function (resolve) {
         sequence.on('end', function (results) {
             resolve(results);

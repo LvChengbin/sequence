@@ -232,41 +232,38 @@ function promiseReject( promise, value ) {
     promiseExecute( promise );
 }
 
-const checks$2 = {
-    string : s => typeof s === 'string' || s instanceof String,
-    function : f => {
-        const type = ({}).toString.call( f ).toLowerCase();
-        return ( type === '[object function]' ) || ( type === '[object asyncfunction]' );
-    },
-    promise : p => p && checks$2.function( p.then ),
-    boolean : s => typeof s === 'boolean',
-    regexp : obj => ({}).toString.call( obj ).toLowerCase() === '[object regexp]'
-};
+var isString = str => typeof str === 'string' || str instanceof String;
+
+var isAsyncFunction = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
+
+var isFunction = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction( fn );
+
+var isRegExp = reg => ({}).toString.call( reg ) === '[object RegExp]';
 
 class EventEmitter {
     constructor() {
         this.__listeners = {};
     }
 
-    $alias( name, to ) {
+    alias( name, to ) {
         this[ name ] = this[ to ].bind( this );
     }
 
-    $on( evt, handler ) {
+    on( evt, handler ) {
         const listeners = this.__listeners;
         listeners[ evt ] ? listeners[ evt ].push( handler ) : ( listeners[ evt ] = [ handler ] );
         return this;
     }
 
-    $once( evt, handler ) {
+    once( evt, handler ) {
         const _handler = ( ...args ) => {
             handler.apply( this, args );
-            this.$removeListener( evt, _handler );
+            this.removeListener( evt, _handler );
         };
-        return this.$on( evt, _handler );
+        return this.on( evt, _handler );
     }
 
-    $removeListener( evt, handler ) {
+    removeListener( evt, handler ) {
         var listeners = this.__listeners,
             handlers = listeners[ evt ];
 
@@ -287,24 +284,24 @@ class EventEmitter {
         return this;
     }
 
-    $emit( evt, ...args ) {
+    emit( evt, ...args ) {
         const handlers = this.__listeners[ evt ];
         if( handlers ) {
             for( let i = 0, l = handlers.length; i < l; i += 1 ) {
-                handlers[ i ] && handlers[ i ]( ...args );
+                handlers[ i ] && handlers[ i ].call( this, ...args );
             }
             return true;
         }
         return false;
     }
 
-    $removeAllListeners( rule ) {
+    removeAllListeners( rule ) {
         let checker;
-        if( checks$2.string( rule ) ) {
+        if( isString( rule ) ) {
             checker = name => rule === name;
-        } else if( checks$2.function( rule ) ) {
+        } else if( isFunction( rule ) ) {
             checker = rule;
-        } else if( checks$2.regexp( rule ) ) {
+        } else if( isRegExp( rule ) ) {
             checker = name => {
                 rule.lastIndex = 0;
                 return rule.test( name );
@@ -321,6 +318,12 @@ class EventEmitter {
     }
 }
 
+var isAsyncFunction$1 = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
+
+var isFunction$1 = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$1( fn );
+
+var isPromise = p => p && isFunction$1( p.then );
+
 function config() {
     return {
         promises : [],
@@ -328,6 +331,8 @@ function config() {
         index : 0,
         steps : [],
         busy : false,
+        suspended : false,
+        suspendTimeout : null,
         promise : Promise.resolve()
     };
 }
@@ -337,26 +342,18 @@ function config() {
  */
 
 class Sequence extends EventEmitter {
-    constructor( autorun = true, steps = [] ) {
+    constructor( steps, options = {} ) {
         super();
-        this.$alias( 'on', '$on' );
-        this.$alias( 'once', '$once' );
-        this.$alias( 'emit', '$emit' );
-        this.$alias( 'removeListener', '$removeListener' );
-        this.$alias( 'removeAllListeners', '$removeAllListeners' );
-
-        if( !checks$2.boolean( autorun ) ) {
-            steps = autorun;
-            autorun = true;
-        }
 
         this.__resolve = null;
+        this.running = false;
+        this.interval = options.interval || 0;
 
         Object.assign( this, config() );
 
-        this.running = false;
-        this.append( steps );
-        autorun !== false && setTimeout( () => {
+        steps && this.append( steps );
+
+        options.autorun !== false && setTimeout( () => {
             this.run();
         }, 0 );
     }
@@ -365,31 +362,37 @@ class Sequence extends EventEmitter {
      * to append new steps to the sequence
      */
     append( steps ) {
-        if( checks$2.function( steps ) ) {
+        const dead = this.index >= this.steps.length;
+
+        if( isFunction$1( steps ) ) {
             this.steps.push( steps );
         } else {
             for( let step of steps ) {
                 this.steps.push( step );
             }
         }
-        this.running && this.next();
+        this.running && dead && this.next( true );
     }
 
     retry() {
         this.index--;
-        this.next();
     }
 
     clear() {
         Object.assign( this, config() );
     }
 
-    next() {
+    next( inner = false ) {
+        if( !inner && this.running ) {
+            console.warn( 'Please do not call next() while the sequence is running.' );
+            return Promise.reject( false );
+        }
+
         /**
          * If there is a step that is running,
          * return the promise instance of the running step.
          */
-        if( this.busy ) this.promise;
+        if( this.busy || this.suspended ) return this.promise;
 
         /**
          * If already reached the end of the sequence,
@@ -410,7 +413,7 @@ class Sequence extends EventEmitter {
              * if the step function doesn't return a promise instance,
              * create a resolved promise instance with the returned value as its value
              */
-            if( !checks$2.promise( promise ) ) {
+            if( !isPromise( promise ) ) {
                 promise = Promise.resolve( promise );
             }
             return promise.then( value => {
@@ -439,7 +442,9 @@ class Sequence extends EventEmitter {
                 if( !this.steps[ this.index ] ) {
                     this.emit( 'end', this.results, this );
                 } else {
-                    this.running && this.next();
+                    setTimeout( () => {
+                        this.running && this.next( true ); 
+                    }, this.interval );
                 }
                 return result;
             } );
@@ -449,19 +454,28 @@ class Sequence extends EventEmitter {
     run() {
         if( this.running ) return;
         this.running = true;
-        this.next();
+        this.next( true );
     }
 
     stop() {
         this.running = false;
+    }
+
+    suspend( duration = 1000 ) {
+        this.suspended = true;
+        this.suspendTimeout && clearTimeout( this.suspendTimeout );
+        this.suspendTimeout = setTimeout( () => {
+            this.suspended = false;
+            this.running && this.next( true );
+        }, duration );
     }
 }
 
 Sequence.SUCCEEDED = 1;
 Sequence.FAILED = 0;
 
-Sequence.all = ( steps ) => {
-    const sequence = new Sequence( steps );
+Sequence.all = ( steps, interval = 0 ) => {
+    const sequence = new Sequence( steps, { interval } );
     return new Promise( ( resolve, reject ) => {
         sequence.on( 'end', results => {
             resolve( results );
@@ -473,8 +487,8 @@ Sequence.all = ( steps ) => {
     } );
 };
 
-Sequence.chain = ( steps ) => {
-    const sequence = new Sequence( steps );
+Sequence.chain = ( steps, interval = 0 ) => {
+    const sequence = new Sequence( steps, { interval } );
     return new Promise( resolve => {
         sequence.on( 'end', results => {
             resolve( results );

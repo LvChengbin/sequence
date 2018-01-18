@@ -189,12 +189,12 @@ describe( 'Sequence', () => {
 
         it( 'run', done => {
             let i = 0;
-            let sequence = new Sequence( false, [
+            let sequence = new Sequence( [
                 () => {
                     expect( i ).toEqual( 1 );
                     done();
                 }
-            ] );
+            ], { autorun : false } );
 
             i++;
             sequence.run();
@@ -202,11 +202,11 @@ describe( 'Sequence', () => {
 
         it( 'next', done => {
             let i = 0;
-            let sequence = new Sequence( false, [
+            let sequence = new Sequence( [
                 () => i++,
                 () => i++,
                 () => i++
-            ] );
+            ], { autorun : false } );
 
             Sequence.all( [
                 () => sequence.next(),
@@ -270,6 +270,41 @@ describe( 'Sequence', () => {
 
         } );
 
+        it( 'suspended', done => {
+            const start = new Date;
+            const sequence = new Sequence( [
+                () => true,
+                () => true
+            ] );
+
+            sequence.on( 'success', () => {
+                sequence.suspend( 50 );
+            } );
+
+            sequence.on( 'end', () => {
+                expect( new Date - start ).toBeGreaterThanOrEqual( 50 );
+                done();
+            } );
+        } );
+
+        it( 'stop() should work even if calling it during suspended', done => {
+            let i = 0;
+            const sequence = new Sequence( [
+                () => true,
+                () => i++
+            ] );
+
+            sequence.on( 'success', () => {
+                sequence.suspend( 50 );
+                sequence.stop();
+            } );
+
+            setTimeout( () => {
+                expect( i ).toEqual( 0 );
+                done();
+            }, 60 );
+        } );
+
         it( 'success event', done => {
             let sequence = new Sequence( [
                 () => {
@@ -311,7 +346,7 @@ describe( 'Sequence', () => {
             } );
         } );
 
-        it( 'end', done => {
+        it( 'end event', done => {
             let sequence = new Sequence( [
                 () => {
                     return new Promise( ( resolve, reject ) => {
@@ -328,5 +363,32 @@ describe( 'Sequence', () => {
             } );
         } );
 
+    } );
+
+    describe( 'running with interval', () => {
+        it( 'the first step should be executed immediately', done => {
+            const start = new Date();
+            new Sequence( [
+                () => {
+                    expect( new Date - start ).toBeLessThan( 500 );
+                    done();
+                }
+            ], { interval : 1000 } )
+        } );
+
+        it( 'steps should be execute with an interval', done => {
+            const start = new Date();
+            const sequence = new Sequence( [
+                () => true,
+                () => true,
+                () => true,
+                () => true
+            ], { interval : 50 } )
+
+            sequence.on( 'end', () => {
+                expect( new Date - start ).toBeGreaterThanOrEqual( 150 );
+                done();
+            } );
+        }, 1000 );
     } );
 } );

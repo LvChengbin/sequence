@@ -11,7 +11,7 @@ export default [ {
     ],
     output : [
         { file : 'dist/sequence.cjs.js', format : 'cjs' },
-        { file : 'dist/sequence.js', format : 'umd', name : 'Promise' }
+        { file : 'dist/sequence.js', format : 'umd', name : 'Sequence' }
     ]
 }, {
     input : 'src/sequence.js',
@@ -22,6 +22,6 @@ export default [ {
         babel()
     ],
     output : [
-        { file : 'dist/sequence.bc.js', format : 'umd', name : 'Promise' }
+        { file : 'dist/sequence.bc.js', format : 'umd', name : 'Sequence' }
     ]
 } ];

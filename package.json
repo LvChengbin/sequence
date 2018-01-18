@@ -1,7 +1,7 @@
 {
   "name": "@lvchengbin/sequence",
   "version": "0.0.1",
-  "description": "",
+  "description": "A light library for executing Promise instance in sequence.",
   "keywords": "sequence",
   "main": "dist/sequence.cjs.js",
   "jsnext:main": "src/sequence.js",
@@ -38,10 +38,11 @@
     "puppeteer": "^1.0.0",
     "rollup": "^0.54.0",
     "rollup-plugin-babel": "^3.0.3",
-    "rollup-plugin-node-resolve": "^3.0.2",
-    "run-sequence": "^2.2.0"
+    "rollup-plugin-node-resolve": "^3.0.2"
   },
   "dependencies": {
+    "@lvchengbin/event-emitter": "0.0.6",
+    "@lvchengbin/is": "0.0.4",
     "@lvchengbin/promise": "^1.0.8"
   }
 }
