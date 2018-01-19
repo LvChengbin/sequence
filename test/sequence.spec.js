@@ -56,7 +56,8 @@ describe( 'Sequence', () => {
                 () => 'a',
                 () => 'b',
                 () => Promise.reject( 'error' )
-            ] ).catch( reason => {
+            ] ).catch( results => {
+                const reason = results[ results.length - 1 ].reason;
                 expect( reason ).toEqual( 'error' );
                 done();
             } );
@@ -245,7 +246,7 @@ describe( 'Sequence', () => {
             }, 60 );
         } );
 
-        it( 'retry', done => {
+        it( 'go', done => {
             let i = 0;
 
             let sequence = new Sequence( [
@@ -259,8 +260,8 @@ describe( 'Sequence', () => {
                 }
             ] );
 
-            sequence.on( 'failed', () => {
-                i < 2 && sequence.retry();
+            sequence.on( 'failed', ( data, index ) => {
+                i < 2 && sequence.go( index - 1 );
             } );
 
             setTimeout( () => {
@@ -361,6 +362,27 @@ describe( 'Sequence', () => {
                 expect( sequence.steps.length ).toEqual( sequence.index );
                 done();
             } );
+        } );
+
+        it( 'should emitted end event every time finishing all steps in the sequence', done => {
+
+            let i = 0;
+
+            let sequence = new Sequence( [
+                () => true
+            ] );
+
+            sequence.on( 'end', () => {
+                i++;
+                if( i < 2 ) {
+                    sequence.append( () => true );
+                }
+            } );
+
+            setTimeout( () => {
+                expect( i ).toEqual( 2 );
+                done();
+            }, 50 )
         } );
 
     } );
