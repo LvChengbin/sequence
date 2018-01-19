@@ -496,6 +496,10 @@ var isPromise = (function (p) {
   return p && isFunction$1(p.then);
 });
 
+function isUndefined () {
+    return arguments.length > 0 && typeof arguments[0] === 'undefined';
+}
+
 function config() {
     return {
         promises: [],
@@ -503,8 +507,6 @@ function config() {
         index: 0,
         steps: [],
         busy: false,
-        suspended: false,
-        suspendTimeout: null,
         promise: Promise$1.resolve()
     };
 }
@@ -524,6 +526,8 @@ var Sequence = function (_EventEmitter) {
 
         _this.__resolve = null;
         _this.running = false;
+        _this.suspended = false;
+        _this.suspendTimeout = null;
         _this.interval = options.interval || 0;
 
         Object.assign(_this, config());
@@ -577,9 +581,13 @@ var Sequence = function (_EventEmitter) {
             this.running && dead && this.next(true);
         }
     }, {
-        key: 'retry',
-        value: function retry() {
-            this.index--;
+        key: 'go',
+        value: function go(n) {
+            if (isUndefined(n)) return;
+            this.index = n;
+            if (this.index > this.steps.length) {
+                this.index = this.steps.length;
+            }
         }
     }, {
         key: 'clear',
@@ -595,7 +603,10 @@ var Sequence = function (_EventEmitter) {
 
             if (!inner && this.running) {
                 console.warn('Please do not call next() while the sequence is running.');
-                return Promise$1.reject(false);
+                return Promise$1.reject(new Sequence.Error({
+                    errno: 2,
+                    errmsg: 'Cannot call next during the sequence is running.'
+                }));
             }
 
             /**
@@ -608,7 +619,12 @@ var Sequence = function (_EventEmitter) {
              * If already reached the end of the sequence,
              * return a rejected promise instance with a false as its reason.
              */
-            if (!this.steps[this.index]) return Promise$1.reject(false);
+            if (!this.steps[this.index]) {
+                return Promise$1.reject(new Sequence.Error({
+                    errno: 1,
+                    errmsg: 'no more step can be executed.'
+                }));
+            }
 
             this.busy = true;
 
@@ -697,9 +713,9 @@ Sequence.all = function (steps) {
         sequence.on('end', function (results) {
             resolve(results);
         });
-        sequence.on('failed', function (result) {
+        sequence.on('failed', function () {
             sequence.stop();
-            reject(result.reason);
+            reject(sequence.results);
         });
     });
 };
@@ -714,6 +730,16 @@ Sequence.chain = function (steps) {
         });
     });
 };
+
+Sequence.Error = function () {
+    function _class(options) {
+        classCallCheck(this, _class);
+
+        Object.assign(this, options);
+    }
+
+    return _class;
+}();
 
 return Sequence;
 

@@ -1,8 +1,13 @@
 {
   "name": "@lvchengbin/sequence",
   "version": "0.0.1",
-  "description": "A light library for executing Promise instance in sequence.",
-  "keywords": "sequence",
+  "description": "A light library for executing multiple steps in sequence.",
+  "keywords": [
+      "sequence",
+      "order",
+      "step",
+      "promise"
+  ],
   "main": "dist/sequence.cjs.js",
   "jsnext:main": "src/sequence.js",
   "scripts": {

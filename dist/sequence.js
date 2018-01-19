@@ -328,6 +328,10 @@ var isFunction$1 = fn => ({}).toString.call( fn ) === '[object Function]' || isA
 
 var isPromise = p => p && isFunction$1( p.then );
 
+function isUndefined() {
+    return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
+}
+
 function config() {
     return {
         promises : [],
@@ -335,8 +339,6 @@ function config() {
         index : 0,
         steps : [],
         busy : false,
-        suspended : false,
-        suspendTimeout : null,
         promise : Promise.resolve()
     };
 }
@@ -351,6 +353,8 @@ class Sequence extends EventEmitter {
 
         this.__resolve = null;
         this.running = false;
+        this.suspended = false;
+        this.suspendTimeout = null;
         this.interval = options.interval || 0;
 
         Object.assign( this, config() );
@@ -378,8 +382,12 @@ class Sequence extends EventEmitter {
         this.running && dead && this.next( true );
     }
 
-    retry() {
-        this.index--;
+    go( n ) {
+        if( isUndefined( n ) ) return;
+        this.index = n;
+        if( this.index > this.steps.length ) {
+            this.index = this.steps.length;
+        }
     }
 
     clear() {
@@ -389,7 +397,10 @@ class Sequence extends EventEmitter {
     next( inner = false ) {
         if( !inner && this.running ) {
             console.warn( 'Please do not call next() while the sequence is running.' );
-            return Promise.reject( false );
+            return Promise.reject( new Sequence.Error( {
+                errno : 2,
+                errmsg : 'Cannot call next during the sequence is running.'
+            } ) );
         }
 
         /**
@@ -402,7 +413,12 @@ class Sequence extends EventEmitter {
          * If already reached the end of the sequence,
          * return a rejected promise instance with a false as its reason.
          */
-        if( !this.steps[ this.index ] ) return Promise.reject( false );
+        if( !this.steps[ this.index ] ) {
+            return Promise.reject( new Sequence.Error( {
+                errno : 1,
+                errmsg : 'no more step can be executed.'
+            } ) );
+        }
 
         this.busy = true;
         
@@ -484,9 +500,9 @@ Sequence.all = ( steps, interval = 0 ) => {
         sequence.on( 'end', results => {
             resolve( results );
         } );
-        sequence.on( 'failed', result => {
+        sequence.on( 'failed', () => {
             sequence.stop();
-            reject( result.reason );
+            reject( sequence.results );
         } );
     } );
 };
@@ -498,6 +514,12 @@ Sequence.chain = ( steps, interval = 0 ) => {
             resolve( results );
         } );
     } );
+};
+
+Sequence.Error = class {
+    constructor( options ) {
+        Object.assign( this, options );
+    }
 };
 
 return Sequence;
