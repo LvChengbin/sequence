@@ -19,10 +19,6 @@ import Sequence from '@lvchengbin/sequence';
 ```
 We also provide files for using in browsers with `<script>` tag, you can get it here [sequence.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.js), and if you want to use it in browsers not supporting ES5 syntax, please use [sequence.bc.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.bc.js).
 
-## Something about steps.
-
-
-
 ## Usage
 
 To create a simple sequence with `new Sequence`:
@@ -84,6 +80,68 @@ Sequence.chain( steps ).then( results => {
 } );
 ```
 
+For example, if you want to send a request after user click a button, but you need to make all requests be sent one by one if the user clicked the button multiple times:
+
+```js
+const sequence = new Sequence();
+
+sequence.on( 'failed', function() {
+    alert( 'Something error happened' );
+    this.stop();
+} );
+
+const button = document.querySelector( '#button' );
+
+button.addEventListener( 'click', () => {
+    sequence.append( () => {
+        return request( 'the url' );
+    } );
+} );
+```
+
+## Something About Steps.
+
+Each step in sequence should be a function, and generally, it should return a Promise object. If the return value of one step function is not a Promise object, the return value will be converted to a Promise object with `Promise.resolve( {the return value} )`. Each step function in the sequence will be executed after its previous step function finished (no matter the Promise object is resolved or rejected).
+
+There are three arguments will be passed to the step function, like this:
+
+```js
+const step = ( result, index, results ) {
+    if( result.status === Sequence.SUCCEEDED ) {
+        console.log( result.value );
+        // some code...
+    } else {
+        console.log( result.reason );
+    }
+}
+```
+
+ - result : the result of the previous step, the structure of the result is:
+
+    ```js
+    // result of a successful step
+    {
+        status : Sequence.SUCCEEDED,
+        index : 1,
+        value : 'some value here',
+        time : 1516339895559
+    }
+    // result of a failed step
+    {
+        status : Sequence.FAILED,
+        index : 2,
+        reason : 'some reason here',
+        time : 1516339895559
+    }
+    ```
+
+    - status : the status of the result, it can be `Sequence.SUCCEEDED` or `Sequence.FAILED`.
+    - index : the position of the step in the sequence.
+    - value : the value of the resolved promise of the step.
+    - reason : the failed reason of the rejecte promise of the step.
+    - time : the time that the step finished.
+
+
 ## API
 
 ### Sequence( steps, options = {} )
@@ -92,7 +150,7 @@ Sequence.chain( steps ).then( results => {
 
 - steps `Function` | `Iterable`
 
-    The steps that you want to add to the sequence, each step must be a `Function` and should return a `Promise` object, if the return value of a step is not a `Promise` object, it will be converted to a resolved `Promise` instance as its value is the return value.
+    The steps that you want to add to the sequence, each step must be a `Function` and should return a Promise object, if the return value of a step is not a Promise object, it will be converted to a resolved Promise instance as its value is the return value.
 
 - options `Object`
 
@@ -139,7 +197,7 @@ To append new steps into the sequence.
 
  - steps `Function` | `Iterable`
     
-    The steps that you want to append to the sequence, each step must be a `Function` and should return a `Promise` object, if the return value of a step is not a `Promise` object, it will be converted to a resolved `Promise` instance as its value is the return value.
+    The steps that you want to append to the sequence, each step must be a `Function` and should return a Promise object, if the return value of a step is not a Promise object, it will be converted to a resolved Promise object as its value is the return value.
     
 **Example**
 
@@ -163,13 +221,13 @@ If there is a step in process while calling this method, the sequence will not g
 
 **Return value**
 
-If the method execute successfully, a resolved `Promise` object of the step will be returned, otherwise a rejected one will be returned.
+If the method execute successfully, a resolved Promise object of the step will be returned, otherwise a rejected one will be returned.
 
 But in different situations, there would be some different result:
 
- - When this method is called, if there is a step in process, the method will return the `Promise` object of the running step.
- - When this method is called while the sequence is running, a rejected `Promise` instance will be returned, and the reason the the instance will be a `Sequence.Error` instance with `errno` is `2`.
- - When this method is called while the sequence already reached the end, a rejected `Promise` instance will be returned, and the reason the the instance will be a `Sequence.Error` instance with `errno` is `1`.
+ - When this method is called, if there is a step in process, the method will return the Promise object of the running step.
+ - When this method is called while the sequence is running, a rejected Promise instance will be returned, and the reason the the instance will be a `Sequence.Error` instance with `errno` is `2`.
+ - When this method is called while the sequence already reached the end, a rejected Promise instance will be returned, and the reason the the instance will be a `Sequence.Error` instance with `errno` is `1`.
 
 **Example**
 
