@@ -1,6 +1,6 @@
 # Sequence
 
-To execute and manage Promise instances in sequence.
+To execute and manage asynchronous functions in sequence.
 
 ## Start
 
