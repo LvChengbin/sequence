@@ -11,13 +11,21 @@ $ npm i @lvchengbin/sequence --save
 ```
 Then you can use it in nodejs code.
 ```js
-const sequence = require( '@lvchengbin/sequence' );
+const Sequence = require( '@lvchengbin/sequence' );
 ```
 If you want to use the package as a ES6 module, you can import it like this:
 ```js
 import Sequence from '@lvchengbin/sequence';
 ```
 We also provide files for using in browsers with `<script>` tag, you can get it here [sequence.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.js), and if you want to use it in browsers not supporting ES5 syntax, please use [sequence.bc.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.bc.js).
+
+```html
+<script src="https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.js"></script>
+```
+
+```html
+<script src="https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.bc.js"></script>
+```
 
 ## Usage
 
@@ -39,7 +47,7 @@ sequence.on( 'success', ( data, index ) => {
 } ); 
 
 sequence.on( 'failed', ( data, index ) => {
-    this.retry();
+    this.go( index - 1 );
     // execute when each step in sequence failed
 } );
 
@@ -116,7 +124,7 @@ const step = ( result, index, results ) {
 }
 ```
 
- - result : the result of the previous step, the structure of the result is:
+ - **result** : the result of the previous step, the structure of the result is:
 
     ```js
     // result of a successful step
@@ -141,6 +149,9 @@ const step = ( result, index, results ) {
     - reason : the failed reason of the rejecte promise of the step.
     - time : the time that the step finished.
 
+- **index** : the order of the step in sequence
+
+- **results** : the full result list of all finished steps.
 
 ## API
 
@@ -254,7 +265,7 @@ To jump to a specified This method just set the cursor of the sequence to the pr
 const sequence = new Sequence( steps );
 
 sequence.on( 'failed', ( data, index ) => {
-    sequence.retry( index - 1 ); // will re-execute this step.
+    sequence.go( index - 1 ); // will re-execute this step.
 } );
 ```
 Notice that, by listening to the `failed` event, cannot pend the sequence, so you cannot do some async things before you decide if you need to jump to one step.But maybe you can use it with `stop` method. For example:
