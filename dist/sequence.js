@@ -516,6 +516,20 @@ Sequence.chain = ( steps, interval = 0 ) => {
     } );
 };
 
+Sequence.any = ( steps, interval = 0 ) => {
+    const sequence = new Sequence( steps, { interval } );
+    return new Promise( ( resolve, reject ) => {
+        sequence.on( 'success', () => {
+            resolve( sequence.results );
+            sequence.stop();
+        } );
+
+        sequence.on( 'end', () => {
+            reject( sequence.results );
+        } );
+    } );
+};
+
 Sequence.Error = class {
     constructor( options ) {
         Object.assign( this, options );

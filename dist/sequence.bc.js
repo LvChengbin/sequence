@@ -731,6 +731,22 @@ Sequence.chain = function (steps) {
     });
 };
 
+Sequence.any = function (steps) {
+    var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+    var sequence = new Sequence(steps, { interval: interval });
+    return new Promise$1(function (resolve, reject) {
+        sequence.on('success', function () {
+            resolve(sequence.results);
+            sequence.stop();
+        });
+
+        sequence.on('end', function () {
+            reject(sequence.results);
+        });
+    });
+};
+
 Sequence.Error = function () {
     function _class(options) {
         classCallCheck(this, _class);
