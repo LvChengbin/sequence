@@ -2,6 +2,28 @@
 
 To execute and manage asynchronous functions in sequence.
 
+
+<!-- vim-markdown-toc GFM -->
+
+* [Start](#start)
+* [Usage](#usage)
+* [Something About Steps.](#something-about-steps)
+* [API](#api)
+    * [Sequence( steps, options = {} )](#sequence-steps-options---)
+    * [append( steps )](#append-steps-)
+    * [clear()](#clear)
+    * [next()](#next)
+    * [go( index )](#go-index-)
+    * [run()](#run)
+    * [stop()](#stop)
+    * [suspend( duration = 1000 )](#suspend-duration--1000-)
+    * [Sequence.all( steps, interval = 0 )](#sequenceall-steps-interval--0-)
+    * [Sequence.chain( steps, interval = 0 )](#sequencechain-steps-interval--0-)
+    * [Sequence.any( steps, interval = 0 )](#sequenceany-steps-interval--0-)
+    * [Sequence.Error](#sequenceerror)
+
+<!-- vim-markdown-toc -->
+
 ## Start
 
 To install the package with `npm`.
