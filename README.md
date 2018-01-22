@@ -327,20 +327,46 @@ Sequence.all( [
     () => Promise.resolve( 1 ),
     () => true
 ] ).then( results => {
+    // result list of the sequence
+    // some code...
+} ).catch( results => {
+    // result list of the sequence
     // some code...
 } );
 ```
 
 ### Sequence.chain( steps, interval = 0 )
 
-To run all steps in a sequence, and ignore if every of them succeeded, a Promise instance will returned, and its value will be a full list of the results of the sequence.
+To run all steps in a sequence, and ignore if every of them succeeded, a Promise instance will be returned, and its value will be a full list of the results of the sequence.
 
 ```js
 Sequence.chain( [
     () => Promise.resolve( 'success' ),
     () => Promise.reject( 'failed' )
 ] ).then( results => {
+    // result list of the sequence
     // some code...
+} );
+```
+
+### Sequence.any( steps, interval = 0 )
+
+To run the steps in sequence until one of them succeeded and a resolved Promise object will be returned. If all the steps executed failed, a rejected Promise object will be returned.
+
+```js
+Sequence.one( [
+    () => Promise.reject(),
+    () => Promise.resolve( true ),
+    () => {
+        // this function will not execute because the previous one succeeded.
+        return true;
+    }
+] ).then( results => {
+    // result list of the sequence
+    // some code...
+} ).catch( results => {
+    // result list of the sequence
+    // some sode...
 } );
 ```
 

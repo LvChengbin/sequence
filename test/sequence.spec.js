@@ -126,6 +126,30 @@ describe( 'Sequence', () => {
 
     } );
 
+    describe( 'Sequence.any', () => {
+        it( 'Should stop executing after any step succeeded', done => {
+            let i = 0;
+            Sequence.any( [
+                () => Promise.reject(),
+                () => true,
+                () => i++
+            ] ).then( () => {
+                expect( i ).toEqual( 0 );
+                done();
+            } )
+        } );
+
+        it( 'Should failed if all the steps failed.', done => {
+            Sequence.any( [
+                () => Promise.reject(),
+                () => Promise.reject(),
+                () => Promise.reject()
+            ] ).catch( () => {
+                done();
+            } )
+        } );
+    } );
+
     describe( 'Sequence()', () => {
         const seq = [];
         let sequence;
