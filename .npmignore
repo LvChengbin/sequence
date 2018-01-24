@@ -16,4 +16,4 @@ npm-debug.log
 test
 karma.conf.js
 rollup.conf.js
-
+node_modules

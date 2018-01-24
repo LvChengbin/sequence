@@ -1,12 +1,10 @@
 'use strict';
 
-const checks = {
-    promise : p => p && checks.function( p.then ),
-    function : f => {
-        const type = ({}).toString.call( f ).toLowerCase();
-        return ( type === '[object function]' ) || ( type === '[object asyncfunction]' );
-    }
-};
+var isAsyncFunction = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
+
+var isFunction = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction( fn );
+
+var isPromise = p => p && isFunction( p.then );
 
 const Promise = class {
     constructor( fn ) {
@@ -14,7 +12,7 @@ const Promise = class {
             throw new TypeError( this + ' is not a promise ' );
         }
 
-        if( !checks.function( fn ) ) {
+        if( !isFunction( fn ) ) {
             throw new TypeError( 'Promise resolver ' + fn + ' is not a function' );
         }
 
@@ -33,8 +31,8 @@ const Promise = class {
     then( resolved, rejected ) {
         const promise = new Promise( () => {} );
         this[ '[[PromiseThenables]]' ].push( {
-            resolve : checks.function( resolved ) ? resolved : null,
-            reject : checks.function( rejected ) ? rejected : null,
+            resolve : isFunction( resolved ) ? resolved : null,
+            reject : isFunction( rejected ) ? rejected : null,
             called : false,
             promise
         } );
@@ -48,7 +46,7 @@ const Promise = class {
 };
 
 Promise.resolve = function( value ) {
-    if( !checks.function( this ) ) {
+    if( !isFunction( this ) ) {
         throw new TypeError( 'Promise.resolve is not a constructor' );
     }
     /**
@@ -61,7 +59,7 @@ Promise.resolve = function( value ) {
 };
 
 Promise.reject = function( reason ) {
-    if( !checks.function( this ) ) {
+    if( !isFunction( this ) ) {
         throw new TypeError( 'Promise.reject is not a constructor' );
     }
     return new Promise( ( resolve, reject ) => {
@@ -75,7 +73,7 @@ Promise.all = function( promises ) {
     return new Promise( ( resolve, reject ) => {
         let remaining = 0;
         const then = ( p, i ) => {
-            if( !checks.promise( p ) ) {
+            if( !isPromise( p ) ) {
                 p = Promise.resolve( p );
             }
             p.then( value => {
@@ -118,7 +116,7 @@ Promise.race = function( promises ) {
         }
 
         for( let promise of promises ) {
-            if( !checks.promise( promise ) ) {
+            if( !isPromise( promise ) ) {
                 promise = Promise.resolve( promise );
             }
             promise.then( onresolved, onrejected );
@@ -234,10 +232,6 @@ function promiseReject( promise, value ) {
 
 var isString = str => typeof str === 'string' || str instanceof String;
 
-var isAsyncFunction = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
-
-var isFunction = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction( fn );
-
 var isRegExp = reg => ({}).toString.call( reg ) === '[object RegExp]';
 
 class EventEmitter {
@@ -318,12 +312,6 @@ class EventEmitter {
     }
 }
 
-var isAsyncFunction$1 = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
-
-var isFunction$1 = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$1( fn );
-
-var isPromise = p => p && isFunction$1( p.then );
-
 function isUndefined() {
     return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
 }
@@ -368,7 +356,7 @@ class Sequence extends EventEmitter {
     append( steps ) {
         const dead = this.index >= this.steps.length;
 
-        if( isFunction$1( steps ) ) {
+        if( isFunction( steps ) ) {
             this.steps.push( steps );
         } else {
             for( let step of steps ) {
