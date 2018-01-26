@@ -4,7 +4,9 @@
             "modules" : false,
             "targets" : {
                 "browsers" : [ "last 3 versions", "chrome > 30", "firefox > 30", "safari >= 10" ]
-            }
+            },
+            "useBuiltIns" : "usage",
+            "debug" : true
         } ]
     ]
 }
