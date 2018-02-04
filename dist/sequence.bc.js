@@ -1392,6 +1392,7 @@ function () {
       return this.then(null, reject);
     }
   }]);
+
   return Promise;
 }();
 
@@ -1643,6 +1644,7 @@ var EventEmitter =
 function () {
   function EventEmitter() {
     _classCallCheck(this, EventEmitter);
+
     this.__listeners = {};
   }
 
@@ -1745,6 +1747,7 @@ function () {
       }
     }
   }]);
+
   return EventEmitter;
 }();
 
@@ -1777,7 +1780,9 @@ function (_EventEmitter) {
     var _this;
 
     var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
     _classCallCheck(this, Sequence);
+
     _this = _possibleConstructorReturn(this, (Sequence.__proto__ || Object.getPrototypeOf(Sequence)).call(this));
     _this.__resolve = null;
     _this.running = false;
@@ -1960,6 +1965,7 @@ function (_EventEmitter) {
       }, duration);
     }
   }]);
+
   return Sequence;
 }(EventEmitter);
 
@@ -1968,6 +1974,11 @@ Sequence.FAILED = 0;
 
 Sequence.all = function (steps) {
   var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+  if (!steps.length) {
+    return Promise$1.resolve([]);
+  }
+
   var sequence = new Sequence(steps, {
     interval: interval
   });
@@ -1984,6 +1995,11 @@ Sequence.all = function (steps) {
 
 Sequence.chain = function (steps) {
   var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+  if (!steps.length) {
+    return Promise$1.resolve([]);
+  }
+
   var sequence = new Sequence(steps, {
     interval: interval
   });
@@ -1996,6 +2012,11 @@ Sequence.chain = function (steps) {
 
 Sequence.any = function (steps) {
   var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+  if (!steps.length) {
+    return Promise$1.reject([]);
+  }
+
   var sequence = new Sequence(steps, {
     interval: interval
   });
@@ -2015,6 +2036,7 @@ Sequence.Error =
 function () {
   function _class(options) {
     _classCallCheck(this, _class);
+
     Object.assign(this, options);
   }
 

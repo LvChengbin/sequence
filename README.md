@@ -35,19 +35,11 @@ Then you can use it in nodejs code.
 ```js
 const Sequence = require( '@lvchengbin/sequence' );
 ```
-If you want to use the package as a ES6 module, you can import it like this:
+If you want to use the package as an ES6 module, you can import it like this:
 ```js
 import Sequence from '@lvchengbin/sequence';
 ```
 We also provide files for using in browsers with `<script>` tag, you can get it here [sequence.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.js), and if you want to use it in browsers not supporting ES5 syntax, please use [sequence.bc.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.bc.js).
-
-```html
-<script src="https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.js"></script>
-```
-
-```html
-<script src="https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.bc.js"></script>
-```
 
 ## Usage
 
@@ -338,7 +330,7 @@ sequence.on( 'success', ( data, index ) => {
 
 ### Sequence.all( steps, interval = 0 )
 
-To run all steps in a sequence, the sequence will return a resolved Promise instance after all steps finished. If one of the steps failed, the function will return a rejected Promise instance.
+To run all steps in a sequence, the sequence will return a resolved Promise instance after all steps finished. If one of the steps failed, the function will return a rejected Promise, and if the steps is empty, the function will return a resolved Promise.
 
 The param `interval` is used for denoting the interval between each two steps.
 
@@ -359,7 +351,7 @@ Sequence.all( [
 
 ### Sequence.chain( steps, interval = 0 )
 
-To run all steps in a sequence, and ignore if every of them succeeded, a Promise instance will be returned, and its value will be a full list of the results of the sequence.
+To run all steps in a sequence, and ignore if every of them succeeded, a Promise will be returned, and its value will be a full list of the results of the sequence, and if the steps is empty, a resolved Promise will be returned directly.
 
 ```js
 Sequence.chain( [
@@ -373,7 +365,7 @@ Sequence.chain( [
 
 ### Sequence.any( steps, interval = 0 )
 
-To run the steps in sequence until one of them succeeded and a resolved Promise object will be returned. If all the steps executed failed, a rejected Promise object will be returned.
+To run the steps in sequence until one of them succeeded and a resolved Promise object will be returned. If all the steps executed failed, a rejected Promise object will be returned, and if the steps is empty, a rejected Promise will be returned.
 
 ```js
 Sequence.one( [

@@ -6,6 +6,12 @@ describe( 'Sequence', () => {
         let seq = [];
         let sequence = null;
 
+        it( 'Should return a resolved promise directly if the steps is empty', done => {
+            Sequence.all( [] ).then( () => {
+                done();
+            } );
+        } );
+
         it( 'Should have gotten correct params in each step', done => {
             sequence = Sequence.all( [ 
                 () => {
@@ -68,6 +74,12 @@ describe( 'Sequence', () => {
         let seq = [];
         let sequence = null;
 
+        it( 'Should return a resolved Promise directly if the steps is empty', done => {
+            Sequence.chain( [] ).then( () => {
+                done();
+            } );
+        } );
+
         it( 'Should have gotten correct reasons in each step', done => {
             sequence = Sequence.chain( [
                 () => {
@@ -127,6 +139,12 @@ describe( 'Sequence', () => {
     } );
 
     describe( 'Sequence.any', () => {
+        it( 'Should return a rejected Promise directly if the steps is empty', done => {
+            Sequence.any( [] ).catch( () => {
+                done();
+            } );
+        } );
+
         it( 'Should stop executing after any step succeeded', done => {
             let i = 0;
             Sequence.any( [

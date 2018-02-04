@@ -483,6 +483,9 @@ Sequence.SUCCEEDED = 1;
 Sequence.FAILED = 0;
 
 Sequence.all = ( steps, interval = 0 ) => {
+    if( !steps.length ) {
+        return Promise.resolve( [] );
+    }
     const sequence = new Sequence( steps, { interval } );
     return new Promise( ( resolve, reject ) => {
         sequence.on( 'end', results => {
@@ -496,6 +499,9 @@ Sequence.all = ( steps, interval = 0 ) => {
 };
 
 Sequence.chain = ( steps, interval = 0 ) => {
+    if( !steps.length ) {
+        return Promise.resolve( [] );
+    }
     const sequence = new Sequence( steps, { interval } );
     return new Promise( resolve => {
         sequence.on( 'end', results => {
@@ -505,6 +511,9 @@ Sequence.chain = ( steps, interval = 0 ) => {
 };
 
 Sequence.any = ( steps, interval = 0 ) => {
+    if( !steps.length ) {
+        return Promise.reject( [] );
+    }
     const sequence = new Sequence( steps, { interval } );
     return new Promise( ( resolve, reject ) => {
         sequence.on( 'success', () => {
