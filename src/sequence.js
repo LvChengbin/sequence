@@ -96,18 +96,25 @@ class Sequence extends EventEmitter {
         
         return this.promise = this.promise.then( () => {
             const step = this.steps[ this.index ];
-            let promise = step(
-                this.results[ this.results.length - 1 ],
-                this.index,
-                this.results
-            );
-            /**
-             * if the step function doesn't return a promise instance,
-             * create a resolved promise instance with the returned value as its value
-             */
-            if( !isPromise( promise ) ) {
-                promise = Promise.resolve( promise );
+            let promise;
+
+            try {
+                promise = step(
+                    this.results[ this.results.length - 1 ],
+                    this.index,
+                    this.results
+                );
+                /**
+                 * if the step function doesn't return a promise instance,
+                 * create a resolved promise instance with the returned value as its value
+                 */
+                if( !isPromise( promise ) ) {
+                    promise = Promise.resolve( promise );
+                }
+            } catch( e ) {
+                promise = Promise.reject( e );
             }
+
             return promise.then( value => {
                 const result = {
                     status : Sequence.SUCCEEDED,

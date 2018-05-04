@@ -82,9 +82,9 @@ Promise.all = function( promises ) {
             }
             p.then( value => {
                 res[ i ] = value;
-                if( --remaining === 0 ) {
-                    resolve( res );
-                }
+                setTimeout( () => {
+                    if( --remaining === 0 ) resolve( res );
+                }, 0 );
             }, reason => {
                 if( !rejected ) {
                     reject( reason );
@@ -95,7 +95,11 @@ Promise.all = function( promises ) {
 
         let i = 0;
         for( let promise of promises ) {
-            then( promise, remaining = i++ );
+            remaining++;
+            then( promise, i++ );
+        }
+        if( !i ) {
+            resolve( res );
         }
     } );
 };
@@ -240,7 +244,7 @@ var isRegExp = reg => ({}).toString.call( reg ) === '[object RegExp]';
 
 class EventEmitter {
     constructor() {
-        this.__listeners = {};
+        this.__listeners = new Map();
     }
 
     alias( name, to ) {
@@ -249,7 +253,13 @@ class EventEmitter {
 
     on( evt, handler ) {
         const listeners = this.__listeners;
-        listeners[ evt ] ? listeners[ evt ].push( handler ) : ( listeners[ evt ] = [ handler ] );
+        let handlers = listeners.get( evt );
+
+        if( !handlers ) {
+            handlers = new Set();
+            listeners.set( evt, handlers );
+        }
+        handlers.add( handler );
         return this;
     }
 
@@ -262,35 +272,16 @@ class EventEmitter {
     }
 
     removeListener( evt, handler ) {
-        var listeners = this.__listeners,
-            handlers = listeners[ evt ];
-
-        if( !handlers || ! handlers.length ) {
-            return this;
-        }
-
-        for( let i = 0; i < handlers.length; i += 1 ) {
-            handlers[ i ] === handler && ( handlers[ i ] = null );
-        }
-
-        setTimeout( () => {
-            for( let i = 0; i < handlers.length; i += 1 ) {
-                handlers[ i ] || handlers.splice( i--, 1 );
-            }
-        }, 0 );
-
+        const listeners = this.__listeners;
+        const handlers = listeners.get( evt );
+        handlers && handlers.delete( handler );
         return this;
     }
 
     emit( evt, ...args ) {
-        const handlers = this.__listeners[ evt ];
-        if( handlers ) {
-            for( let i = 0, l = handlers.length; i < l; i += 1 ) {
-                handlers[ i ] && handlers[ i ].call( this, ...args );
-            }
-            return true;
-        }
-        return false;
+        const handlers = this.__listeners.get( evt );
+        if( !handlers ) return false;
+        handlers.forEach( handler => handler.call( this, ...args ) );
     }
 
     removeAllListeners( rule ) {
@@ -307,12 +298,11 @@ class EventEmitter {
         }
 
         const listeners = this.__listeners;
-        for( let attr in listeners ) {
-            if( checker( attr ) ) {
-                listeners[ attr ] = null;
-                delete listeners[ attr ];
-            }
-        }
+
+        listeners.forEach( ( value, key ) => {
+            checker( key ) && listeners.delete( key );
+        } );
+        return this;
     }
 }
 
@@ -412,18 +402,25 @@ class Sequence extends EventEmitter {
         
         return this.promise = this.promise.then( () => {
             const step = this.steps[ this.index ];
-            let promise = step(
-                this.results[ this.results.length - 1 ],
-                this.index,
-                this.results
-            );
-            /**
-             * if the step function doesn't return a promise instance,
-             * create a resolved promise instance with the returned value as its value
-             */
-            if( !isPromise( promise ) ) {
-                promise = Promise.resolve( promise );
+            let promise;
+
+            try {
+                promise = step(
+                    this.results[ this.results.length - 1 ],
+                    this.index,
+                    this.results
+                );
+                /**
+                 * if the step function doesn't return a promise instance,
+                 * create a resolved promise instance with the returned value as its value
+                 */
+                if( !isPromise( promise ) ) {
+                    promise = Promise.resolve( promise );
+                }
+            } catch( e ) {
+                promise = Promise.reject( e );
             }
+
             return promise.then( value => {
                 const result = {
                     status : Sequence.SUCCEEDED,

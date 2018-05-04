@@ -68,6 +68,18 @@ describe( 'Sequence', () => {
                 done();
             } );
         } );
+
+        it( 'Should regard the return value of a step as a rejected Promise if the step function thrown an error', done => {
+            Sequence.all( [
+                () => {
+                    throw 'error';
+                }
+            ] ).catch( results => {
+                const reason = results[ 0 ].reason;
+                expect( reason ).toEqual( 'error' );
+                done();
+            } );
+        } );
     } );
 
     describe( 'Sequence.chain', () => {
@@ -454,5 +466,20 @@ describe( 'Sequence', () => {
                 done();
             } );
         }, 1000 );
+
+        it( 'should also run correctly if the initial steps argument is empty', done => {
+
+            const start = new Date();
+            const sequence = new Sequence( [], { interval : 50 } )
+
+            sequence.append( () => true );
+            sequence.append( () => true );
+            sequence.append( () => true );
+
+            sequence.append( () => {
+                expect( new Date - start ).toBeGreaterThanOrEqual( 150 );
+                done();
+            } );
+        } );
     } );
 } );
