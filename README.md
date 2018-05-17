@@ -351,7 +351,7 @@ Sequence.all( [
 
 ### Sequence.chain( steps, interval = 0 )
 
-To run all steps in a sequence, and ignore if every of them succeeded, a Promise will be returned, and its value will be a full list of the results of the sequence, and if the steps is empty, a resolved Promise will be returned directly.
+To run all steps in a sequence, and doesn't care about if all of the steps succeeded, a `Promise` will be returned, and its value will be a full list of the results of the sequence, and if the steps is empty, a resolved Promise will be returned directly.
 
 ```js
 Sequence.chain( [

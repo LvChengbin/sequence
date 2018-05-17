@@ -329,11 +329,28 @@ class Sequence extends EventEmitter {
         this.running = false;
         this.suspended = false;
         this.suspendTimeout = null;
+        this.muteEndIfEmpty = !!options.emitEndIfEmpty;
         this.interval = options.interval || 0;
 
         Object.assign( this, config() );
 
-        steps && this.append( steps );
+        if( steps && steps.length ) {
+            this.append( steps );
+        } else if( !this.muteEndIfEmpty ) {
+            if( typeof process === 'object' && isFunction( process.nextTick ) ) {
+                process.nextTick( () => {
+                    this.emit( 'end', this.results, this );
+                } );
+            } else if( typeof setImmediate === 'function' ) {
+                setImmediate( () => {
+                    this.emit( 'end', this.results, this );
+                } );
+            } else {
+                setTimeout( () => {
+                    this.emit( 'end', this.results, this );
+                }, 0 );
+            }
+        }
 
         options.autorun !== false && setTimeout( () => {
             this.run();
@@ -475,11 +492,12 @@ class Sequence extends EventEmitter {
 Sequence.SUCCEEDED = 1;
 Sequence.FAILED = 0;
 
-Sequence.all = ( steps, interval = 0 ) => {
-    if( !steps.length ) {
-        return Promise.resolve( [] );
-    }
+Sequence.all = ( ...args ) => {
+    const { steps, interval, cb } = parseArguments( ...args );
     const sequence = new Sequence( steps, { interval } );
+
+    isFunction( cb ) && cb.call( sequence, sequence );
+
     return new Promise( ( resolve, reject ) => {
         sequence.on( 'end', results => {
             resolve( results );
@@ -491,11 +509,10 @@ Sequence.all = ( steps, interval = 0 ) => {
     } );
 };
 
-Sequence.chain = ( steps, interval = 0 ) => {
-    if( !steps.length ) {
-        return Promise.resolve( [] );
-    }
+Sequence.chain = ( ...args ) => {
+    const { steps, interval, cb } = parseArguments( ...args );
     const sequence = new Sequence( steps, { interval } );
+    isFunction( cb ) && cb.call( sequence, sequence );
     return new Promise( resolve => {
         sequence.on( 'end', results => {
             resolve( results );
@@ -503,11 +520,10 @@ Sequence.chain = ( steps, interval = 0 ) => {
     } );
 };
 
-Sequence.any = ( steps, interval = 0 ) => {
-    if( !steps.length ) {
-        return Promise.reject( [] );
-    }
+Sequence.any = ( ...args ) => {
+    const { steps, interval, cb } = parseArguments( ...args );
     const sequence = new Sequence( steps, { interval } );
+    isFunction( cb ) && cb.call( sequence, sequence );
     return new Promise( ( resolve, reject ) => {
         sequence.on( 'success', () => {
             resolve( sequence.results );
@@ -525,5 +541,13 @@ Sequence.Error = class {
         Object.assign( this, options );
     }
 };
+
+function parseArguments( steps, interval, cb ) {
+    if( isFunction( interval ) ) {
+        cb = interval;
+        interval = 0;
+    }
+    return { steps, interval, cb }
+}
 
 module.exports = Sequence;

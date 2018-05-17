@@ -439,6 +439,15 @@ describe( 'Sequence', () => {
             }, 50 )
         } );
 
+        it( 'end should be emitted directly if the initial steps is empty', done => {
+            let sequence = new Sequence( [] );
+
+            sequence.on( 'end', results => {
+                expect( results ).toEqual( [] );
+                done();
+            } );
+        } );
+
     } );
 
     describe( 'running with interval', () => {

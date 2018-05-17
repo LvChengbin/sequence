@@ -4,782 +4,607 @@
 	(global.Sequence = factory());
 }(this, (function () { 'use strict';
 
-function _typeof(obj) {
-  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-    _typeof = function (obj) {
-      return typeof obj;
-    };
-  } else {
-    _typeof = function (obj) {
-      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    };
-  }
+function isAsyncFunction (fn) { return ( {} ).toString.call( fn ) === '[object AsyncFunction]'; }
 
-  return _typeof(obj);
-}
+function isFunction (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction( fn ); }
 
-function _classCallCheck(instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-}
+function isPromise (p) { return p && isFunction( p.then ); }
 
-function _defineProperties(target, props) {
-  for (var i = 0; i < props.length; i++) {
-    var descriptor = props[i];
-    descriptor.enumerable = descriptor.enumerable || false;
-    descriptor.configurable = true;
-    if ("value" in descriptor) descriptor.writable = true;
-    Object.defineProperty(target, descriptor.key, descriptor);
-  }
-}
-
-function _createClass(Constructor, protoProps, staticProps) {
-  if (protoProps) _defineProperties(Constructor.prototype, protoProps);
-  if (staticProps) _defineProperties(Constructor, staticProps);
-  return Constructor;
-}
-
-function _inherits(subClass, superClass) {
-  if (typeof superClass !== "function" && superClass !== null) {
-    throw new TypeError("Super expression must either be null or a function");
-  }
-
-  subClass.prototype = Object.create(superClass && superClass.prototype, {
-    constructor: {
-      value: subClass,
-      enumerable: false,
-      writable: true,
-      configurable: true
-    }
-  });
-  if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-}
-
-function _assertThisInitialized(self) {
-  if (self === void 0) {
-    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-  }
-
-  return self;
-}
-
-function _possibleConstructorReturn(self, call) {
-  if (call && (typeof call === "object" || typeof call === "function")) {
-    return call;
-  }
-
-  if (self === void 0) {
-    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-  }
-
-  return self;
-}
-
-var isAsyncFunction = (function (fn) {
-  return {}.toString.call(fn) === '[object AsyncFunction]';
-});
-
-var isFunction = (function (fn) {
-  return {}.toString.call(fn) === '[object Function]' || isAsyncFunction(fn);
-});
-
-var isPromise = (function (p) {
-  return p && isFunction(p.then);
-});
-
-var Promise$1 =
-/*#__PURE__*/
-function () {
-  function Promise(fn) {
-    _classCallCheck(this, Promise);
-
-    if (!(this instanceof Promise)) {
-      throw new TypeError(this + ' is not a promise ');
-    }
-
-    if (!isFunction(fn)) {
-      throw new TypeError('Promise resolver ' + fn + ' is not a function');
-    }
-
-    this['[[PromiseStatus]]'] = 'pending';
-    this['[[PromiseValue]]'] = null;
-    this['[[PromiseThenables]]'] = [];
-
-    try {
-      fn(promiseResolve.bind(null, this), promiseReject.bind(null, this));
-    } catch (e) {
-      if (this['[[PromiseStatus]]'] === 'pending') {
-        promiseReject.bind(null, this)(e);
-      }
-    }
-  }
-
-  _createClass(Promise, [{
-    key: "then",
-    value: function then(resolved, rejected) {
-      var promise = new Promise(function () {});
-      this['[[PromiseThenables]]'].push({
-        resolve: isFunction(resolved) ? resolved : null,
-        reject: isFunction(rejected) ? rejected : null,
-        called: false,
-        promise: promise
-      });
-      if (this['[[PromiseStatus]]'] !== 'pending') promiseExecute(this);
-      return promise;
-    }
-  }, {
-    key: "catch",
-    value: function _catch(reject) {
-      return this.then(null, reject);
-    }
-  }]);
-
-  return Promise;
-}();
-
-Promise$1.resolve = function (value) {
-  if (!isFunction(this)) {
-    throw new TypeError('Promise.resolve is not a constructor');
-  }
-  /**
-   * @todo
-   * check if the value need to return the resolve( value )
-   */
-
-
-  return new Promise$1(function (resolve) {
-    resolve(value);
-  });
-};
-
-Promise$1.reject = function (reason) {
-  if (!isFunction(this)) {
-    throw new TypeError('Promise.reject is not a constructor');
-  }
-
-  return new Promise$1(function (resolve, reject) {
-    reject(reason);
-  });
-};
-
-Promise$1.all = function (promises) {
-  var rejected = false;
-  var res = [];
-  return new Promise$1(function (resolve, reject) {
-    var remaining = 0;
-
-    var then = function then(p, i) {
-      if (!isPromise(p)) {
-        p = Promise$1.resolve(p);
-      }
-
-      p.then(function (value) {
-        res[i] = value;
-        setTimeout(function () {
-          if (--remaining === 0) resolve(res);
-        }, 0);
-      }, function (reason) {
-        if (!rejected) {
-          reject(reason);
-          rejected = true;
+var Promise = (function () {
+    function Promise( fn ) {
+        if( !( this instanceof Promise ) ) {
+            throw new TypeError( this + ' is not a promise ' );
         }
-      });
+
+        if( !isFunction( fn ) ) {
+            throw new TypeError( 'Promise resolver ' + fn + ' is not a function' );
+        }
+
+        this[ '[[PromiseStatus]]' ] = 'pending';
+        this[ '[[PromiseValue]]' ]= null;
+        this[ '[[PromiseThenables]]' ] = [];
+        try {
+            fn( promiseResolve.bind( null, this ), promiseReject.bind( null, this ) );
+        } catch( e ) {
+            if( this[ '[[PromiseStatus]]' ] === 'pending' ) {
+                promiseReject.bind( null, this )( e );
+            }
+        }
+    }
+
+    Promise.prototype.then = function then ( resolved, rejected ) {
+        var promise = new Promise( function () {} );
+        this[ '[[PromiseThenables]]' ].push( {
+            resolve : isFunction( resolved ) ? resolved : null,
+            reject : isFunction( rejected ) ? rejected : null,
+            called : false,
+            promise: promise
+        } );
+        if( this[ '[[PromiseStatus]]' ] !== 'pending' ) { promiseExecute( this ); }
+        return promise;
     };
 
-    var i = 0;
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
+    Promise.prototype.catch = function catch$1 ( reject ) {
+        return this.then( null, reject );
+    };
 
-    try {
-      for (var _iterator = promises[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-        var _promise = _step.value;
-        remaining++;
-        then(_promise, i++);
-      }
-    } catch (err) {
-      _didIteratorError = true;
-      _iteratorError = err;
-    } finally {
-      try {
-        if (!_iteratorNormalCompletion && _iterator.return != null) {
-          _iterator.return();
-        }
-      } finally {
-        if (_didIteratorError) {
-          throw _iteratorError;
-        }
-      }
+    return Promise;
+}());
+
+Promise.resolve = function( value ) {
+    if( !isFunction( this ) ) {
+        throw new TypeError( 'Promise.resolve is not a constructor' );
     }
-
-    if (!i) {
-      resolve(res);
-    }
-  });
-};
-
-Promise$1.race = function (promises) {
-  var resolved = false;
-  var rejected = false;
-  return new Promise$1(function (resolve, reject) {
-    function onresolved(value) {
-      if (!resolved && !rejected) {
-        resolve(value);
-        resolved = true;
-      }
-    }
-
-    function onrejected(reason) {
-      if (!resolved && !rejected) {
-        reject(reason);
-        rejected = true;
-      }
-    }
-
-    var _iteratorNormalCompletion2 = true;
-    var _didIteratorError2 = false;
-    var _iteratorError2 = undefined;
-
-    try {
-      for (var _iterator2 = promises[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-        var _promise2 = _step2.value;
-
-        if (!isPromise(_promise2)) {
-          _promise2 = Promise$1.resolve(_promise2);
-        }
-
-        _promise2.then(onresolved, onrejected);
-      }
-    } catch (err) {
-      _didIteratorError2 = true;
-      _iteratorError2 = err;
-    } finally {
-      try {
-        if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
-          _iterator2.return();
-        }
-      } finally {
-        if (_didIteratorError2) {
-          throw _iteratorError2;
-        }
-      }
-    }
-  });
-};
-
-function promiseExecute(promise) {
-  var thenable, p;
-  if (promise['[[PromiseStatus]]'] === 'pending') return;
-  if (!promise['[[PromiseThenables]]'].length) return;
-
-  var then = function then(p, t) {
-    p.then(function (value) {
-      promiseResolve(t.promise, value);
-    }, function (reason) {
-      promiseReject(t.promise, reason);
-    });
-  };
-
-  while (promise['[[PromiseThenables]]'].length) {
-    thenable = promise['[[PromiseThenables]]'].shift();
-    if (thenable.called) continue;
-    thenable.called = true;
-
-    if (promise['[[PromiseStatus]]'] === 'resolved') {
-      if (!thenable.resolve) {
-        promiseResolve(thenable.promise, promise['[[PromiseValue]]']);
-        continue;
-      }
-
-      try {
-        p = thenable.resolve.call(null, promise['[[PromiseValue]]']);
-      } catch (e) {
-        then(Promise$1.reject(e), thenable);
-        continue;
-      }
-
-      if (p && (typeof p === 'function' || _typeof(p) === 'object') && p.then) {
-        then(p, thenable);
-        continue;
-      }
-    } else {
-      if (!thenable.reject) {
-        promiseReject(thenable.promise, promise['[[PromiseValue]]']);
-        continue;
-      }
-
-      try {
-        p = thenable.reject.call(null, promise['[[PromiseValue]]']);
-      } catch (e) {
-        then(Promise$1.reject(e), thenable);
-        continue;
-      }
-
-      if ((typeof p === 'function' || _typeof(p) === 'object') && p.then) {
-        then(p, thenable);
-        continue;
-      }
-    }
-
-    promiseResolve(thenable.promise, p);
-  }
-
-  return promise;
-}
-
-function promiseResolve(promise, value) {
-  if (!(promise instanceof Promise$1)) {
-    return new Promise$1(function (resolve) {
-      resolve(value);
-    });
-  }
-
-  if (promise['[[PromiseStatus]]'] !== 'pending') return;
-
-  if (value === promise) {
     /**
-     * thie error should be thrown, defined ES6 standard
-     * it would be thrown in Chrome but not in Firefox or Safari
+     * @todo
+     * check if the value need to return the resolve( value )
      */
-    throw new TypeError('Chaining cycle detected for promise #<Promise>');
-  }
+    return new Promise( function (resolve) {
+        resolve( value );
+    } );
+};
 
-  if (value !== null && (typeof value === 'function' || _typeof(value) === 'object')) {
-    var then;
-
-    try {
-      then = value.then;
-    } catch (e) {
-      return promiseReject(promise, e);
+Promise.reject = function( reason ) {
+    if( !isFunction( this ) ) {
+        throw new TypeError( 'Promise.reject is not a constructor' );
     }
+    return new Promise( function ( resolve, reject ) {
+        reject( reason );
+    } );
+};
 
-    if (typeof then === 'function') {
-      then.call(value, promiseResolve.bind(null, promise), promiseReject.bind(null, promise));
-      return;
-    }
-  }
+Promise.all = function( promises ) {
+    var rejected = false;
+    var res = [];
+    return new Promise( function ( resolve, reject ) {
+        var remaining = 0;
+        var then = function ( p, i ) {
+            if( !isPromise( p ) ) {
+                p = Promise.resolve( p );
+            }
+            p.then( function (value) {
+                res[ i ] = value;
+                setTimeout( function () {
+                    if( --remaining === 0 ) { resolve( res ); }
+                }, 0 );
+            }, function (reason) {
+                if( !rejected ) {
+                    reject( reason );
+                    rejected = true;
+                }
+            } );
+        };
 
-  promise['[[PromiseStatus]]'] = 'resolved';
-  promise['[[PromiseValue]]'] = value;
-  promiseExecute(promise);
-}
+        var i = 0;
+        for( var i$1 = 0, list = promises; i$1 < list.length; i$1 += 1 ) {
+            var promise = list[i$1];
 
-function promiseReject(promise, value) {
-  if (!(promise instanceof Promise$1)) {
-    return new Promise$1(function (resolve, reject) {
-      reject(value);
-    });
-  }
+            remaining++;
+            then( promise, i++ );
+        }
+        if( !i ) {
+            resolve( res );
+        }
+    } );
+};
 
-  promise['[[PromiseStatus]]'] = 'rejected';
-  promise['[[PromiseValue]]'] = value;
-  promiseExecute(promise);
-}
+Promise.race = function( promises ) {
+    var resolved = false;
+    var rejected = false;
 
-var isString = (function (str) {
-  return typeof str === 'string' || str instanceof String;
-});
-
-var isRegExp = (function (reg) {
-  return {}.toString.call(reg) === '[object RegExp]';
-});
-
-var EventEmitter =
-/*#__PURE__*/
-function () {
-  function EventEmitter() {
-    _classCallCheck(this, EventEmitter);
-
-    this.__listeners = new Map();
-  }
-
-  _createClass(EventEmitter, [{
-    key: "alias",
-    value: function alias(name, to) {
-      this[name] = this[to].bind(this);
-    }
-  }, {
-    key: "on",
-    value: function on(evt, handler) {
-      var listeners = this.__listeners;
-      var handlers = listeners.get(evt);
-
-      if (!handlers) {
-        handlers = new Set();
-        listeners.set(evt, handlers);
-      }
-
-      handlers.add(handler);
-      return this;
-    }
-  }, {
-    key: "once",
-    value: function once(evt, handler) {
-      var _this = this;
-
-      var _handler = function _handler() {
-        for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-          args[_key] = arguments[_key];
+    return new Promise( function ( resolve, reject ) {
+        function onresolved( value ) {
+            if( !resolved && !rejected ) {
+                resolve( value );
+                resolved = true;
+            }
         }
 
-        handler.apply(_this, args);
+        function onrejected( reason ) {
+            if( !resolved && !rejected ) {
+                reject( reason );
+                rejected = true;
+            }
+        }
 
-        _this.removeListener(evt, _handler);
-      };
+        for( var i = 0, list = promises; i < list.length; i += 1 ) {
+            var promise = list[i];
 
-      return this.on(evt, _handler);
+            if( !isPromise( promise ) ) {
+                promise = Promise.resolve( promise );
+            }
+            promise.then( onresolved, onrejected );
+        }
+    } );
+};
+
+function promiseExecute( promise ) {
+    var thenable,
+        p;
+
+    if( promise[ '[[PromiseStatus]]' ] === 'pending' ) { return; }
+    if( !promise[ '[[PromiseThenables]]' ].length ) { return; }
+
+    var then = function ( p, t ) {
+        p.then( function (value) {
+            promiseResolve( t.promise, value );
+        }, function (reason) {
+            promiseReject( t.promise, reason );
+        } );
+    };
+
+    while( promise[ '[[PromiseThenables]]' ].length ) {
+        thenable = promise[ '[[PromiseThenables]]' ].shift();
+
+        if( thenable.called ) { continue; }
+
+        thenable.called = true;
+
+        if( promise[ '[[PromiseStatus]]' ] === 'resolved' ) {
+            if( !thenable.resolve ) {
+                promiseResolve( thenable.promise, promise[ '[[PromiseValue]]' ] );
+                continue;
+            }
+            try {
+                p = thenable.resolve.call( null, promise[ '[[PromiseValue]]' ] );
+            } catch( e ) {
+                then( Promise.reject( e ), thenable );
+                continue;
+            }
+            if( p && ( typeof p === 'function' || typeof p === 'object' ) && p.then ) {
+                then( p, thenable );
+                continue;
+            }
+        } else {
+            if( !thenable.reject ) {
+                promiseReject( thenable.promise, promise[ '[[PromiseValue]]' ] ); 
+                continue;
+            }
+            try {
+                p = thenable.reject.call( null, promise[ '[[PromiseValue]]' ] );
+            } catch( e ) {
+                then( Promise.reject( e ), thenable );
+                continue;
+            }
+            if( ( typeof p === 'function' || typeof p === 'object' ) && p.then ) {
+                then( p, thenable );
+                continue;
+            }
+        }
+        promiseResolve( thenable.promise, p );
     }
-  }, {
-    key: "removeListener",
-    value: function removeListener(evt, handler) {
-      var listeners = this.__listeners;
-      var handlers = listeners.get(evt);
-      handlers && handlers.delete(handler);
-      return this;
+    return promise;
+}
+
+function promiseResolve( promise, value ) {
+    if( !( promise instanceof Promise ) ) {
+        return new Promise( function (resolve) {
+            resolve( value );
+        } );
     }
-  }, {
-    key: "emit",
-    value: function emit(evt) {
-      var _this2 = this;
-
-      for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-        args[_key2 - 1] = arguments[_key2];
-      }
-
-      var handlers = this.__listeners.get(evt);
-
-      if (!handlers) return false;
-      handlers.forEach(function (handler) {
-        return handler.call.apply(handler, [_this2].concat(args));
-      });
+    if( promise[ '[[PromiseStatus]]' ] !== 'pending' ) { return; }
+    if( value === promise ) {
+        /**
+         * thie error should be thrown, defined ES6 standard
+         * it would be thrown in Chrome but not in Firefox or Safari
+         */
+        throw new TypeError( 'Chaining cycle detected for promise #<Promise>' );
     }
-  }, {
-    key: "removeAllListeners",
-    value: function removeAllListeners(rule) {
-      var checker;
 
-      if (isString(rule)) {
-        checker = function checker(name) {
-          return rule === name;
-        };
-      } else if (isFunction(rule)) {
+    if( value !== null && ( typeof value === 'function' || typeof value === 'object' ) ) {
+        var then;
+
+        try {
+            then = value.then;
+        } catch( e ) {
+            return promiseReject( promise, e );
+        }
+
+        if( typeof then === 'function' ) {
+            then.call( value, 
+                promiseResolve.bind( null, promise ),
+                promiseReject.bind( null, promise )
+            );
+            return;
+        }
+    }
+    promise[ '[[PromiseStatus]]' ] = 'resolved';
+    promise[ '[[PromiseValue]]' ] = value;
+    promiseExecute( promise );
+}
+
+function promiseReject( promise, value ) {
+    if( !( promise instanceof Promise ) ) {
+        return new Promise( function ( resolve, reject ) {
+            reject( value );
+        } );
+    }
+    promise[ '[[PromiseStatus]]' ] = 'rejected';
+    promise[ '[[PromiseValue]]' ] = value;
+    promiseExecute( promise );
+}
+
+function isString (str) { return typeof str === 'string' || str instanceof String; }
+
+function isRegExp (reg) { return ({}).toString.call( reg ) === '[object RegExp]'; }
+
+var EventEmitter = function EventEmitter() {
+    this.__listeners = new Map();
+};
+
+EventEmitter.prototype.alias = function alias ( name, to ) {
+    this[ name ] = this[ to ].bind( this );
+};
+
+EventEmitter.prototype.on = function on ( evt, handler ) {
+    var listeners = this.__listeners;
+    var handlers = listeners.get( evt );
+
+    if( !handlers ) {
+        handlers = new Set();
+        listeners.set( evt, handlers );
+    }
+    handlers.add( handler );
+    return this;
+};
+
+EventEmitter.prototype.once = function once ( evt, handler ) {
+        var this$1 = this;
+
+    var _handler = function () {
+            var args = [], len = arguments.length;
+            while ( len-- ) args[ len ] = arguments[ len ];
+
+        handler.apply( this$1, args );
+        this$1.removeListener( evt, _handler );
+    };
+    return this.on( evt, _handler );
+};
+
+EventEmitter.prototype.removeListener = function removeListener ( evt, handler ) {
+    var listeners = this.__listeners;
+    var handlers = listeners.get( evt );
+    handlers && handlers.delete( handler );
+    return this;
+};
+
+EventEmitter.prototype.emit = function emit ( evt ) {
+        var this$1 = this;
+        var args = [], len = arguments.length - 1;
+        while ( len-- > 0 ) args[ len ] = arguments[ len + 1 ];
+
+    var handlers = this.__listeners.get( evt );
+    if( !handlers ) { return false; }
+    handlers.forEach( function (handler) { return handler.call.apply( handler, [ this$1 ].concat( args ) ); } );
+};
+
+EventEmitter.prototype.removeAllListeners = function removeAllListeners ( rule ) {
+    var checker;
+    if( isString( rule ) ) {
+        checker = function (name) { return rule === name; };
+    } else if( isFunction( rule ) ) {
         checker = rule;
-      } else if (isRegExp(rule)) {
-        checker = function checker(name) {
-          rule.lastIndex = 0;
-          return rule.test(name);
+    } else if( isRegExp( rule ) ) {
+        checker = function (name) {
+            rule.lastIndex = 0;
+            return rule.test( name );
         };
-      }
-
-      var listeners = this.__listeners;
-      listeners.forEach(function (value, key) {
-        checker(key) && listeners.delete(key);
-      });
-      return this;
     }
-  }]);
 
-  return EventEmitter;
-}();
+    var listeners = this.__listeners;
 
-function isUndefined () {
-  return arguments.length > 0 && typeof arguments[0] === 'undefined';
+    listeners.forEach( function ( value, key ) {
+        checker( key ) && listeners.delete( key );
+    } );
+    return this;
+};
+
+function isUndefined() {
+    return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
 }
 
 function config() {
-  return {
-    promises: [],
-    results: [],
-    index: 0,
-    steps: [],
-    busy: false,
-    promise: Promise$1.resolve()
-  };
+    return {
+        promises : [],
+        results : [],
+        index : 0,
+        steps : [],
+        busy : false,
+        promise : Promise.resolve()
+    };
 }
 /**
  * new Sequence( false, [] )
  * new Sequence( [] )
  */
 
+var Sequence = (function (EventEmitter$$1) {
+    function Sequence( steps, options ) {
+        var this$1 = this;
+        if ( options === void 0 ) options = {};
 
-var Sequence =
-/*#__PURE__*/
-function (_EventEmitter) {
-  _inherits(Sequence, _EventEmitter);
+        EventEmitter$$1.call(this);
 
-  function Sequence(steps) {
-    var _this;
+        this.__resolve = null;
+        this.running = false;
+        this.suspended = false;
+        this.suspendTimeout = null;
+        this.muteEndIfEmpty = !!options.emitEndIfEmpty;
+        this.interval = options.interval || 0;
 
-    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+        Object.assign( this, config() );
 
-    _classCallCheck(this, Sequence);
-
-    _this = _possibleConstructorReturn(this, (Sequence.__proto__ || Object.getPrototypeOf(Sequence)).call(this));
-    _this.__resolve = null;
-    _this.running = false;
-    _this.suspended = false;
-    _this.suspendTimeout = null;
-    _this.interval = options.interval || 0;
-    Object.assign(_assertThisInitialized(_this), config());
-    steps && _this.append(steps);
-    options.autorun !== false && setTimeout(function () {
-      _this.run();
-    }, 0);
-    return _this;
-  }
-  /**
-   * to append new steps to the sequence
-   */
-
-
-  _createClass(Sequence, [{
-    key: "append",
-    value: function append(steps) {
-      var dead = this.index >= this.steps.length;
-
-      if (isFunction(steps)) {
-        this.steps.push(steps);
-      } else {
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
-        try {
-          for (var _iterator = steps[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var _step2 = _step.value;
-            this.steps.push(_step2);
-          }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator.return != null) {
-              _iterator.return();
+        if( steps && steps.length ) {
+            this.append( steps );
+        } else if( !this.muteEndIfEmpty ) {
+            if( typeof process === 'object' && isFunction( process.nextTick ) ) {
+                process.nextTick( function () {
+                    this$1.emit( 'end', this$1.results, this$1 );
+                } );
+            } else if( typeof setImmediate === 'function' ) {
+                setImmediate( function () {
+                    this$1.emit( 'end', this$1.results, this$1 );
+                } );
+            } else {
+                setTimeout( function () {
+                    this$1.emit( 'end', this$1.results, this$1 );
+                }, 0 );
             }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
-          }
-        }
-      }
-
-      this.running && dead && this.next(true);
-    }
-  }, {
-    key: "go",
-    value: function go(n) {
-      if (isUndefined(n)) return;
-      this.index = n;
-
-      if (this.index > this.steps.length) {
-        this.index = this.steps.length;
-      }
-    }
-  }, {
-    key: "clear",
-    value: function clear() {
-      Object.assign(this, config());
-    }
-  }, {
-    key: "next",
-    value: function next() {
-      var _this2 = this;
-
-      var inner = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-
-      if (!inner && this.running) {
-        console.warn('Please do not call next() while the sequence is running.');
-        return Promise$1.reject(new Sequence.Error({
-          errno: 2,
-          errmsg: 'Cannot call next during the sequence is running.'
-        }));
-      }
-      /**
-       * If there is a step that is running,
-       * return the promise instance of the running step.
-       */
-
-
-      if (this.busy || this.suspended) return this.promise;
-      /**
-       * If already reached the end of the sequence,
-       * return a rejected promise instance with a false as its reason.
-       */
-
-      if (!this.steps[this.index]) {
-        return Promise$1.reject(new Sequence.Error({
-          errno: 1,
-          errmsg: 'no more step can be executed.'
-        }));
-      }
-
-      this.busy = true;
-      return this.promise = this.promise.then(function () {
-        var step = _this2.steps[_this2.index];
-        var promise;
-
-        try {
-          promise = step(_this2.results[_this2.results.length - 1], _this2.index, _this2.results);
-          /**
-           * if the step function doesn't return a promise instance,
-           * create a resolved promise instance with the returned value as its value
-           */
-
-          if (!isPromise(promise)) {
-            promise = Promise$1.resolve(promise);
-          }
-        } catch (e) {
-          promise = Promise$1.reject(e);
         }
 
-        return promise.then(function (value) {
-          var result = {
-            status: Sequence.SUCCEEDED,
-            index: _this2.index,
-            value: value,
-            time: +new Date()
-          };
-
-          _this2.results.push(result);
-
-          _this2.emit('success', result, _this2.index, _this2);
-
-          return result;
-        }).catch(function (reason) {
-          var result = {
-            status: Sequence.FAILED,
-            index: _this2.index,
-            reason: reason,
-            time: +new Date()
-          };
-
-          _this2.results.push(result);
-
-          _this2.emit('failed', result, _this2.index, _this2);
-
-          return result;
-        }).then(function (result) {
-          _this2.index++;
-          _this2.busy = false;
-
-          if (!_this2.steps[_this2.index]) {
-            _this2.emit('end', _this2.results, _this2);
-          } else {
-            setTimeout(function () {
-              _this2.running && _this2.next(true);
-            }, _this2.interval);
-          }
-
-          return result;
-        });
-      });
+        options.autorun !== false && setTimeout( function () {
+            this$1.run();
+        }, 0 );
     }
-  }, {
-    key: "run",
-    value: function run() {
-      if (this.running) return;
-      this.running = true;
-      this.next(true);
-    }
-  }, {
-    key: "stop",
-    value: function stop() {
-      this.running = false;
-    }
-  }, {
-    key: "suspend",
-    value: function suspend() {
-      var _this3 = this;
 
-      var duration = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
-      this.suspended = true;
-      this.suspendTimeout && clearTimeout(this.suspendTimeout);
-      this.suspendTimeout = setTimeout(function () {
-        _this3.suspended = false;
-        _this3.running && _this3.next(true);
-      }, duration);
-    }
-  }]);
+    if ( EventEmitter$$1 ) Sequence.__proto__ = EventEmitter$$1;
+    Sequence.prototype = Object.create( EventEmitter$$1 && EventEmitter$$1.prototype );
+    Sequence.prototype.constructor = Sequence;
 
-  return Sequence;
-}(EventEmitter);
+    /**
+     * to append new steps to the sequence
+     */
+    Sequence.prototype.append = function append ( steps ) {
+        var this$1 = this;
+
+        var dead = this.index >= this.steps.length;
+
+        if( isFunction( steps ) ) {
+            this.steps.push( steps );
+        } else {
+            for( var i = 0, list = steps; i < list.length; i += 1 ) {
+                var step = list[i];
+
+                this$1.steps.push( step );
+            }
+        }
+        this.running && dead && this.next( true );
+    };
+
+    Sequence.prototype.go = function go ( n ) {
+        if( isUndefined( n ) ) { return; }
+        this.index = n;
+        if( this.index > this.steps.length ) {
+            this.index = this.steps.length;
+        }
+    };
+
+    Sequence.prototype.clear = function clear () {
+        Object.assign( this, config() );
+    };
+
+    Sequence.prototype.next = function next ( inner ) {
+        var this$1 = this;
+        if ( inner === void 0 ) inner = false;
+
+        if( !inner && this.running ) {
+            console.warn( 'Please do not call next() while the sequence is running.' );
+            return Promise.reject( new Sequence.Error( {
+                errno : 2,
+                errmsg : 'Cannot call next during the sequence is running.'
+            } ) );
+        }
+
+        /**
+         * If there is a step that is running,
+         * return the promise instance of the running step.
+         */
+        if( this.busy || this.suspended ) { return this.promise; }
+
+        /**
+         * If already reached the end of the sequence,
+         * return a rejected promise instance with a false as its reason.
+         */
+        if( !this.steps[ this.index ] ) {
+            return Promise.reject( new Sequence.Error( {
+                errno : 1,
+                errmsg : 'no more step can be executed.'
+            } ) );
+        }
+
+        this.busy = true;
+        
+        return this.promise = this.promise.then( function () {
+            var step = this$1.steps[ this$1.index ];
+            var promise;
+
+            try {
+                promise = step(
+                    this$1.results[ this$1.results.length - 1 ],
+                    this$1.index,
+                    this$1.results
+                );
+                /**
+                 * if the step function doesn't return a promise instance,
+                 * create a resolved promise instance with the returned value as its value
+                 */
+                if( !isPromise( promise ) ) {
+                    promise = Promise.resolve( promise );
+                }
+            } catch( e ) {
+                promise = Promise.reject( e );
+            }
+
+            return promise.then( function (value) {
+                var result = {
+                    status : Sequence.SUCCEEDED,
+                    index : this$1.index,
+                    value: value,
+                    time : +new Date
+                };
+                this$1.results.push( result );
+                this$1.emit( 'success', result, this$1.index, this$1 );
+                return result;
+            } ).catch( function (reason) {
+                var result = {
+                    status : Sequence.FAILED,
+                    index : this$1.index,
+                    reason: reason,
+                    time : +new Date
+                };
+                this$1.results.push( result );
+                this$1.emit( 'failed', result, this$1.index, this$1 );
+                return result;
+            } ).then( function (result) {
+                this$1.index++;
+                this$1.busy = false;
+                if( !this$1.steps[ this$1.index ] ) {
+                    this$1.emit( 'end', this$1.results, this$1 );
+                } else {
+                    setTimeout( function () {
+                        this$1.running && this$1.next( true ); 
+                    }, this$1.interval );
+                }
+                return result;
+            } );
+        } );
+    };
+
+    Sequence.prototype.run = function run () {
+        if( this.running ) { return; }
+        this.running = true;
+        this.next( true );
+    };
+
+    Sequence.prototype.stop = function stop () {
+        this.running = false;
+    };
+
+    Sequence.prototype.suspend = function suspend ( duration ) {
+        var this$1 = this;
+        if ( duration === void 0 ) duration = 1000;
+
+        this.suspended = true;
+        this.suspendTimeout && clearTimeout( this.suspendTimeout );
+        this.suspendTimeout = setTimeout( function () {
+            this$1.suspended = false;
+            this$1.running && this$1.next( true );
+        }, duration );
+    };
+
+    return Sequence;
+}(EventEmitter));
 
 Sequence.SUCCEEDED = 1;
 Sequence.FAILED = 0;
 
-Sequence.all = function (steps) {
-  var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+Sequence.all = function () {
+    var args = [], len = arguments.length;
+    while ( len-- ) args[ len ] = arguments[ len ];
 
-  if (!steps.length) {
-    return Promise$1.resolve([]);
-  }
+    var ref = parseArguments.apply( void 0, args );
+    var steps = ref.steps;
+    var interval = ref.interval;
+    var cb = ref.cb;
+    var sequence = new Sequence( steps, { interval: interval } );
 
-  var sequence = new Sequence(steps, {
-    interval: interval
-  });
-  return new Promise$1(function (resolve, reject) {
-    sequence.on('end', function (results) {
-      resolve(results);
-    });
-    sequence.on('failed', function () {
-      sequence.stop();
-      reject(sequence.results);
-    });
-  });
+    isFunction( cb ) && cb.call( sequence, sequence );
+
+    return new Promise( function ( resolve, reject ) {
+        sequence.on( 'end', function (results) {
+            resolve( results );
+        } );
+        sequence.on( 'failed', function () {
+            sequence.stop();
+            reject( sequence.results );
+        } );
+    } );
 };
 
-Sequence.chain = function (steps) {
-  var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+Sequence.chain = function () {
+    var args = [], len = arguments.length;
+    while ( len-- ) args[ len ] = arguments[ len ];
 
-  if (!steps.length) {
-    return Promise$1.resolve([]);
-  }
-
-  var sequence = new Sequence(steps, {
-    interval: interval
-  });
-  return new Promise$1(function (resolve) {
-    sequence.on('end', function (results) {
-      resolve(results);
-    });
-  });
+    var ref = parseArguments.apply( void 0, args );
+    var steps = ref.steps;
+    var interval = ref.interval;
+    var cb = ref.cb;
+    var sequence = new Sequence( steps, { interval: interval } );
+    isFunction( cb ) && cb.call( sequence, sequence );
+    return new Promise( function (resolve) {
+        sequence.on( 'end', function (results) {
+            resolve( results );
+        } );
+    } );
 };
 
-Sequence.any = function (steps) {
-  var interval = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+Sequence.any = function () {
+    var args = [], len = arguments.length;
+    while ( len-- ) args[ len ] = arguments[ len ];
 
-  if (!steps.length) {
-    return Promise$1.reject([]);
-  }
+    var ref = parseArguments.apply( void 0, args );
+    var steps = ref.steps;
+    var interval = ref.interval;
+    var cb = ref.cb;
+    var sequence = new Sequence( steps, { interval: interval } );
+    isFunction( cb ) && cb.call( sequence, sequence );
+    return new Promise( function ( resolve, reject ) {
+        sequence.on( 'success', function () {
+            resolve( sequence.results );
+            sequence.stop();
+        } );
 
-  var sequence = new Sequence(steps, {
-    interval: interval
-  });
-  return new Promise$1(function (resolve, reject) {
-    sequence.on('success', function () {
-      resolve(sequence.results);
-      sequence.stop();
-    });
-    sequence.on('end', function () {
-      reject(sequence.results);
-    });
-  });
+        sequence.on( 'end', function () {
+            reject( sequence.results );
+        } );
+    } );
 };
 
-Sequence.Error =
-/*#__PURE__*/
-function () {
-  function _class(options) {
-    _classCallCheck(this, _class);
+Sequence.Error = (function () {
+    function Error( options ) {
+        Object.assign( this, options );
+    }
 
-    Object.assign(this, options);
-  }
+    return Error;
+}());
 
-  return _class;
-}();
+function parseArguments( steps, interval, cb ) {
+    if( isFunction( interval ) ) {
+        cb = interval;
+        interval = 0;
+    }
+    return { steps: steps, interval: interval, cb: cb }
+}
 
 return Sequence;
 

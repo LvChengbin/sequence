@@ -1,6 +1,5 @@
-import babel from 'rollup-plugin-babel';
 import resolve from 'rollup-plugin-node-resolve';
-import commonjs from 'rollup-plugin-commonjs';
+import buble from 'rollup-plugin-buble';
 
 export default [ {
     input : 'src/sequence.js',
@@ -20,10 +19,11 @@ export default [ {
         resolve( {
             jsnext : true
         } ),
-        commonjs( {
-            sourceMap : false
-        } ),
-        babel()
+        buble( {
+            transforms : {
+                dangerousForOf : true
+            }
+        } )
     ],
     output : [
         { file : 'dist/sequence.bc.js', format : 'umd', name : 'Sequence' }
