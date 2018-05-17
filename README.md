@@ -214,7 +214,7 @@ new Sequence( [
 } )
 ```
 
-### append( steps )
+### Sequence.prototype.append( steps )
 
 To append new steps into the sequence.
 
@@ -234,11 +234,11 @@ sequence.append( () => {
 } );
 ```
 
-### clear()
+### Sequence.prototype.clear()
 
 To remove all steps in the sequence no matter if the steps have executed.
 
-### next()
+### Sequence.prototype.next()
 
 To run the next step in ths sequence if the sequence is not running. It cannot use while the sequence is running.
 
@@ -263,7 +263,7 @@ sequence.next().then( result => {
 } );
 ```
 
-### go( index )
+### Sequence.prototype.go( index )
 
 To jump to a specified This method just set the cursor of the sequence to the previous one and it will not 
 
@@ -297,15 +297,15 @@ sequence.on( 'failed', ( data, index ) => {
 } );
 ```
 
-### run()
+### Sequence.prototype.run()
 
 To run the sequence if it is not running.
 
-### stop()
+### Sequence.prototype.stop()
 
 To stop the sequence if it is running
 
-### suspend( duration = 1000 )
+### Sequence.prototype.suspend( duration = 1000 )
 
 To suspend the sequence with specfiying a time then the sequence will be paused for a while and continue executing after the duration you set. During the time the sequence suspended, the sequence is still running.
 
@@ -328,11 +328,13 @@ sequence.on( 'success', ( data, index ) => {
 } );
 ```
 
-### Sequence.all( steps, interval = 0 )
+### Sequence.all( steps[, interval = 0, callback ] )
 
 To run all steps in a sequence, the sequence will return a resolved Promise instance after all steps finished. If one of the steps failed, the function will return a rejected Promise, and if the steps is empty, the function will return a resolved Promise.
 
 The param `interval` is used for denoting the interval between each two steps.
+
+The param `callback` will be executed after creating the instance of `Sequence`, so you can control the instance of `Sequence` with this param.
 
 The value of the resolved promise will be an `Array` filled with result of each step.
 
@@ -347,9 +349,13 @@ Sequence.all( [
     // result list of the sequence
     // some code...
 } );
+
+Sequence.all( [], sequence => {
+    sequence.on( 'success', () => {} );
+} );
 ```
 
-### Sequence.chain( steps, interval = 0 )
+### Sequence.chain( steps[, interval = 0, callback ] )
 
 To run all steps in a sequence, and doesn't care about if all of the steps succeeded, a `Promise` will be returned, and its value will be a full list of the results of the sequence, and if the steps is empty, a resolved Promise will be returned directly.
 
@@ -363,12 +369,12 @@ Sequence.chain( [
 } );
 ```
 
-### Sequence.any( steps, interval = 0 )
+### Sequence.any( steps[, interval = 0, callback ] )
 
 To run the steps in sequence until one of them succeeded and a resolved Promise object will be returned. If all the steps executed failed, a rejected Promise object will be returned, and if the steps is empty, a rejected Promise will be returned.
 
 ```js
-Sequence.one( [
+Sequence.any( [
     () => Promise.reject(),
     () => Promise.resolve( true ),
     () => {
