@@ -2,10 +2,28 @@
 // Generated on Tue Jul 11 2017 12:49:06 GMT+0800 (CST)
 
 process.env.CHROME_BIN = require( 'puppeteer' ).executablePath();
-
+const path = require( 'path' );
+const  argv = require( 'optimist' ).argv;
 const resolve = require( 'rollup-plugin-node-resolve' );
+const buble = require( 'rollup-plugin-buble' );
+const serve = require( 'koa-static' );
 
-const argv = require( 'optimist' ).argv;
+const rollupPlugins = [
+    resolve( {
+        module : true,
+        jsnext : true
+    } ),
+];
+
+if( argv.es5 ) {
+    rollupPlugins.push(
+        buble( {
+            transforms : {
+                dangerousForOf : true
+            }
+        } )
+    );
+}
 
 module.exports = function(config) {
     config.set({
@@ -13,13 +31,11 @@ module.exports = function(config) {
         // base path that will be used to resolve all patterns (eg. files, exclude)
         basePath: '',
 
-
         // frameworks to use
         // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
         // Most versions of PhantomJS do not suppport ES5 and ES6, so add es6-shim here to make sure all
         // test cases could be executed in PhantomJS
         frameworks: [ 'jasmine' ],
-
 
         // list of files / patterns to load in the browser
         files : ( () => {
@@ -61,19 +77,22 @@ module.exports = function(config) {
         // preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
         preprocessors: {
-            'test/**/*.js' : [ 'rollup' ],
+            'test/**/*.js' : [ 'rollup', 'yolk' ],
         },
 
         // 
         rollupPreprocessor : {
-            plugins : [
-                resolve( {
-                    module : true,
-                    jsnext : true
-                } )
-            ],
+            plugins : rollupPlugins,
             output : {
                 format : 'iife'
+            }
+        },
+
+        yolk : {
+            debugging : false,
+            routers( app ) {
+                app.router.get( '/demo/(.*)', serve( path.join( __dirname, 'test' ) ) );
+                app.router.get( '/dist/(.*)', serve( path.join( __dirname ) ) );
             }
         },
 

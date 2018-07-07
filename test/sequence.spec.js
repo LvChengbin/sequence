@@ -1,3 +1,5 @@
+import sleep from '@lvchengbin/sleep';
+import Promise from '@lvchengbin/promise';
 import Sequence from '../src/sequence';
 
 describe( 'Sequence', () => {
@@ -306,10 +308,10 @@ describe( 'Sequence', () => {
             let sequence = new Sequence( [
                 () => {
                     return new Promise( ( resolve, reject ) => {
-                        setTimeout( () => {
+                        sleep( 10 ).then( () => {
                             i++;
                             reject( 'x' );
-                        }, 20 );
+                        } );
                     } );
                 }
             ] );
@@ -318,10 +320,10 @@ describe( 'Sequence', () => {
                 i < 2 && sequence.go( index - 1 );
             } );
 
-            setTimeout( () => {
+            sleep( 80 ).then( () => {
                 expect( i ).toEqual( 2 );
                 done();
-            }, 60 );
+            } );
 
         } );
 

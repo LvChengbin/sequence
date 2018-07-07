@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Sequence</title>
+        <script src="./promise.bc.js"></script>
+        <script src="/dist/sequence.bc.js"></script>
+    </head>
+    <body>
+        <script>
+            var sequence = new Sequence( [
+                function() {
+                    return new Promise( function( resolve ) {
+                        resolve( 'x' );
+                    } );
+                }
+            ] );
+            sequence.on( 'success', function() {
+                console.log( arguments );
+            } );
+        </script>
+        
+    </body>
+</html>

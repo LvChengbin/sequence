@@ -17,7 +17,8 @@ export default [ {
     input : 'src/sequence.js',
     plugins : [
         resolve( {
-            jsnext : true
+            jsnext : true,
+            module : true
         } ),
         buble( {
             transforms : {

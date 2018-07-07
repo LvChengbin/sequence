@@ -39,7 +39,7 @@ If you want to use the package as an ES6 module, you can import it like this:
 ```js
 import Sequence from '@lvchengbin/sequence';
 ```
-We also provide files for using in browsers with `<script>` tag, you can get it here [sequence.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.js), and if you want to use it in browsers not supporting ES5 syntax, please use [sequence.bc.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.bc.js).
+We also provide files for using in browsers with `<script>` tag, you can get it here [sequence.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.js), and if you want to use it in browsers not supporting ES6 syntax, please use [sequence.bc.js](https://raw.githubusercontent.com/LvChengbin/sequence/master/dist/sequence.bc.js).
 
 ## Usage
 

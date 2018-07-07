@@ -4,6 +4,21 @@
 	(global.Sequence = factory());
 }(this, (function () { 'use strict';
 
+/**
+ * async function
+ *
+ * @syntax: 
+ *  async function() {}
+ *  async () => {}
+ *  async x() => {}
+ *
+ * @compatibility
+ * IE: no
+ * Edge: >= 15
+ * Android: >= 5.0
+ *
+ */
+
 function isAsyncFunction (fn) { return ( {} ).toString.call( fn ) === '[object AsyncFunction]'; }
 
 function isFunction (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction( fn ); }
@@ -244,19 +259,204 @@ function promiseReject( promise, value ) {
     promiseExecute( promise );
 }
 
+function isUndefined() {
+    return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
+}
+
+function find( haystack, key ) {
+    for( var i = 0, list = haystack; i < list.length; i += 1 ) {
+        var item = list[i];
+
+        if( item[ 0 ] === key ) { return item; }
+    }
+    return false;
+}
+
+var Map = function Map( iterable ) {
+    if ( iterable === void 0 ) iterable = [];
+
+    if( !( this instanceof Map ) ) {
+        throw new TypeError( 'Constructor Map requires \'new\'' );
+    }
+    this.map = iterable || [];
+};
+
+var prototypeAccessors = { size: { configurable: true } };
+prototypeAccessors.size.get = function () {
+    return this.map.length;
+};
+
+Map.prototype.get = function get ( key ) {
+    var data = find( this.map, key );
+    return data ? data[ 1 ] : undefined;
+};
+
+Map.prototype.set = function set ( key, value ) {
+    var data = find( this.map, key );
+    if( data ) {
+        data[ 1 ] = value;
+    } else {
+        this.map.push( [ key, value ] );
+    }
+    return this;
+};
+
+Map.prototype.delete = function delete$1 ( key ) {
+        var this$1 = this;
+
+    for( var i = 0, l = this.map.length; i < l; i += 1 ) {
+        var item = this$1.map[ i ];
+        if( item[ 0 ] === key ) {
+            this$1.map.splice( i, 1 );
+            return true;
+        }
+            
+    }
+    return false;
+};
+
+Map.prototype.clear = function clear () {
+    this.map= [];
+};
+
+Map.prototype.forEach = function forEach ( callback, thisArg ) {
+        var this$1 = this;
+
+    isUndefined( thisArg ) && ( this.Arg = this );
+    for( var i = 0, list = this$1.map; i < list.length; i += 1 ) {
+        var item = list[i];
+
+            callback.call( thisArg, item[ 1 ], item[ 0 ], this$1 );
+    }
+};
+
+Map.prototype.has = function has ( key ) {
+    return !!find( this.map, key );
+};
+
+Map.prototype.keys = function keys () {
+        var this$1 = this;
+
+    var keys = [];
+    for( var i = 0, list = this$1.map; i < list.length; i += 1 ) {
+        var item = list[i];
+
+            keys.push( item[ 0 ] );
+    }
+    return keys;
+};
+
+Map.prototype.entries = function entries () {
+    return this.map;
+};
+
+Map.prototype.values = function values () {
+        var this$1 = this;
+
+    var values = [];
+    for( var i = 0, list = this$1.map; i < list.length; i += 1 ) {
+        var item = list[i];
+
+            values.push( item[ 1 ] );
+    }
+    return values;
+};
+
+Object.defineProperties( Map.prototype, prototypeAccessors );
+
+var Set = function Set( iterable ) {
+    var this$1 = this;
+    if ( iterable === void 0 ) iterable = [];
+
+    if( !( this instanceof Set ) ) {
+        throw new TypeError( 'Constructor Set requires \'new\'' );
+    }
+    this.set = [];
+
+    if( iterable && iterable.length ) {
+        for( var i = 0, list = iterable; i < list.length; i += 1 ) {
+            var item = list[i];
+
+            this$1.add( item );
+        }
+    }
+};
+
+var prototypeAccessors$1 = { size: { configurable: true } };
+
+prototypeAccessors$1.size.get = function () {
+    return this.set.length;
+};
+
+Set.prototype.add = function add ( value ) {
+    var i = this.set.indexOf( value );
+    if( i > -1 ) {
+        this.set[ i ] = value;
+    } else {
+        this.set.push( value );
+    }
+    return this;
+};
+
+Set.prototype.delete = function delete$1 ( value ) {
+    var i = this.set.indexOf( value );
+    if( i > -1 ) {
+        this.set.splice( i, 1 );
+        return true;
+    }
+    return false;
+};
+
+Set.prototype.clear = function clear () {
+    this.set = [];
+};
+
+Set.prototype.forEach = function forEach ( callback, thisArg ) {
+        var this$1 = this;
+
+    isUndefined( thisArg ) && ( this.Arg = this );
+    for( var i = 0, list = this$1.set; i < list.length; i += 1 ) {
+        var item = list[i];
+
+            callback.call( thisArg, item, item, this$1 );
+    }
+};
+
+Set.prototype.has = function has ( value ) {
+    return this.set.indexOf( value ) > -1;
+};
+
+Set.prototype.keys = function keys () {
+    return this.values();
+};
+
+Set.prototype.entries = function entries () {
+        var this$1 = this;
+
+    var res = [];
+    for( var i = 0, list = this$1.set; i < list.length; i += 1 ) {
+        var item = list[i];
+
+            res.push( [ item, item ] ); 
+    }
+    return res;
+};
+
+Set.prototype.values = function values () {
+    return this.set;
+};
+
+Object.defineProperties( Set.prototype, prototypeAccessors$1 );
+
 function isString (str) { return typeof str === 'string' || str instanceof String; }
 
 function isRegExp (reg) { return ({}).toString.call( reg ) === '[object RegExp]'; }
 
-var EventEmitter = function EventEmitter() {
+var defaultExport = function defaultExport() {
     this.__listeners = new Map();
 };
 
-EventEmitter.prototype.alias = function alias ( name, to ) {
-    this[ name ] = this[ to ].bind( this );
-};
-
-EventEmitter.prototype.on = function on ( evt, handler ) {
+defaultExport.prototype.on = function on ( evt, handler ) {
     var listeners = this.__listeners;
     var handlers = listeners.get( evt );
 
@@ -268,7 +468,7 @@ EventEmitter.prototype.on = function on ( evt, handler ) {
     return this;
 };
 
-EventEmitter.prototype.once = function once ( evt, handler ) {
+defaultExport.prototype.once = function once ( evt, handler ) {
         var this$1 = this;
 
     var _handler = function () {
@@ -281,14 +481,14 @@ EventEmitter.prototype.once = function once ( evt, handler ) {
     return this.on( evt, _handler );
 };
 
-EventEmitter.prototype.removeListener = function removeListener ( evt, handler ) {
+defaultExport.prototype.removeListener = function removeListener ( evt, handler ) {
     var listeners = this.__listeners;
     var handlers = listeners.get( evt );
     handlers && handlers.delete( handler );
     return this;
 };
 
-EventEmitter.prototype.emit = function emit ( evt ) {
+defaultExport.prototype.emit = function emit ( evt ) {
         var this$1 = this;
         var args = [], len = arguments.length - 1;
         while ( len-- > 0 ) args[ len ] = arguments[ len + 1 ];
@@ -298,7 +498,7 @@ EventEmitter.prototype.emit = function emit ( evt ) {
     handlers.forEach( function (handler) { return handler.call.apply( handler, [ this$1 ].concat( args ) ); } );
 };
 
-EventEmitter.prototype.removeAllListeners = function removeAllListeners ( rule ) {
+defaultExport.prototype.removeAllListeners = function removeAllListeners ( rule ) {
     var checker;
     if( isString( rule ) ) {
         checker = function (name) { return rule === name; };
@@ -319,8 +519,23 @@ EventEmitter.prototype.removeAllListeners = function removeAllListeners ( rule )
     return this;
 };
 
-function isUndefined() {
-    return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
+function assign( dest ) {
+    var sources = [], len = arguments.length - 1;
+    while ( len-- > 0 ) sources[ len ] = arguments[ len + 1 ];
+
+    if( isFunction( Object.assign ) ) {
+        return Object.assign.apply( Object, [ dest ].concat( sources ) );
+    }
+    var obj = sources[ 0 ];
+    for( var property in obj ) {
+        if( obj.hasOwnProperty( property ) ) {
+            dest[ property ] = obj[ property ];
+        }
+    }
+    if( sources.length > 1 ) {
+        return assign.apply( void 0, [ dest ].concat( sources.splice( 1, sources.length - 1 ) ) );
+    }
+    return dest;
 }
 
 function config() {
@@ -352,7 +567,7 @@ var Sequence = (function (EventEmitter$$1) {
         this.muteEndIfEmpty = !!options.emitEndIfEmpty;
         this.interval = options.interval || 0;
 
-        Object.assign( this, config() );
+        assign( this, config() );
 
         if( steps && steps.length ) {
             this.append( steps );
@@ -410,7 +625,7 @@ var Sequence = (function (EventEmitter$$1) {
     };
 
     Sequence.prototype.clear = function clear () {
-        Object.assign( this, config() );
+        assign( this, config() );
     };
 
     Sequence.prototype.next = function next ( inner ) {
@@ -522,77 +737,77 @@ var Sequence = (function (EventEmitter$$1) {
         }, duration );
     };
 
+    Sequence.all = function all () {
+        var args = [], len = arguments.length;
+        while ( len-- ) args[ len ] = arguments[ len ];
+
+        var ref = parseArguments.apply( void 0, args );
+        var steps = ref.steps;
+        var interval = ref.interval;
+        var cb = ref.cb;
+        var sequence = new Sequence( steps, { interval: interval } );
+
+        isFunction( cb ) && cb.call( sequence, sequence );
+
+        return new Promise( function ( resolve, reject ) {
+            sequence.on( 'end', function (results) {
+                resolve( results );
+            } );
+            sequence.on( 'failed', function () {
+                sequence.stop();
+                reject( sequence.results );
+            } );
+        } );
+    };
+
+    Sequence.chain = function chain () {
+        var args = [], len = arguments.length;
+        while ( len-- ) args[ len ] = arguments[ len ];
+
+        var ref = parseArguments.apply( void 0, args );
+        var steps = ref.steps;
+        var interval = ref.interval;
+        var cb = ref.cb;
+        var sequence = new Sequence( steps, { interval: interval } );
+        isFunction( cb ) && cb.call( sequence, sequence );
+        return new Promise( function (resolve) {
+            sequence.on( 'end', function (results) {
+                resolve( results );
+            } );
+        } );
+    };
+
+    Sequence.any = function any () {
+        var args = [], len = arguments.length;
+        while ( len-- ) args[ len ] = arguments[ len ];
+
+        var ref = parseArguments.apply( void 0, args );
+        var steps = ref.steps;
+        var interval = ref.interval;
+        var cb = ref.cb;
+        var sequence = new Sequence( steps, { interval: interval } );
+        isFunction( cb ) && cb.call( sequence, sequence );
+        return new Promise( function ( resolve, reject ) {
+            sequence.on( 'success', function () {
+                resolve( sequence.results );
+                sequence.stop();
+            } );
+
+            sequence.on( 'end', function () {
+                reject( sequence.results );
+            } );
+        } );
+    };
+
     return Sequence;
-}(EventEmitter));
+}(defaultExport));
 
 Sequence.SUCCEEDED = 1;
 Sequence.FAILED = 0;
 
-Sequence.all = function () {
-    var args = [], len = arguments.length;
-    while ( len-- ) args[ len ] = arguments[ len ];
-
-    var ref = parseArguments.apply( void 0, args );
-    var steps = ref.steps;
-    var interval = ref.interval;
-    var cb = ref.cb;
-    var sequence = new Sequence( steps, { interval: interval } );
-
-    isFunction( cb ) && cb.call( sequence, sequence );
-
-    return new Promise( function ( resolve, reject ) {
-        sequence.on( 'end', function (results) {
-            resolve( results );
-        } );
-        sequence.on( 'failed', function () {
-            sequence.stop();
-            reject( sequence.results );
-        } );
-    } );
-};
-
-Sequence.chain = function () {
-    var args = [], len = arguments.length;
-    while ( len-- ) args[ len ] = arguments[ len ];
-
-    var ref = parseArguments.apply( void 0, args );
-    var steps = ref.steps;
-    var interval = ref.interval;
-    var cb = ref.cb;
-    var sequence = new Sequence( steps, { interval: interval } );
-    isFunction( cb ) && cb.call( sequence, sequence );
-    return new Promise( function (resolve) {
-        sequence.on( 'end', function (results) {
-            resolve( results );
-        } );
-    } );
-};
-
-Sequence.any = function () {
-    var args = [], len = arguments.length;
-    while ( len-- ) args[ len ] = arguments[ len ];
-
-    var ref = parseArguments.apply( void 0, args );
-    var steps = ref.steps;
-    var interval = ref.interval;
-    var cb = ref.cb;
-    var sequence = new Sequence( steps, { interval: interval } );
-    isFunction( cb ) && cb.call( sequence, sequence );
-    return new Promise( function ( resolve, reject ) {
-        sequence.on( 'success', function () {
-            resolve( sequence.results );
-            sequence.stop();
-        } );
-
-        sequence.on( 'end', function () {
-            reject( sequence.results );
-        } );
-    } );
-};
-
 Sequence.Error = (function () {
     function Error( options ) {
-        Object.assign( this, options );
+        assign( this, options );
     }
 
     return Error;

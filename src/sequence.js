@@ -4,6 +4,22 @@ import isFunction from '@lvchengbin/is/src/function';
 import isPromise from '@lvchengbin/is/src/promise';
 import isUndefined from'@lvchengbin/is/src/undefined';
 
+function assign( dest, ...sources ) {
+    if( isFunction( Object.assign ) ) {
+        return Object.assign( dest, ...sources );
+    }
+    const obj = sources[ 0 ];
+    for( let property in obj ) {
+        if( obj.hasOwnProperty( property ) ) {
+            dest[ property ] = obj[ property ];
+        }
+    }
+    if( sources.length > 1 ) {
+        return assign( dest, ...sources.splice( 1, sources.length - 1 ) );
+    }
+    return dest;
+}
+
 function config() {
     return {
         promises : [],
@@ -30,7 +46,7 @@ class Sequence extends EventEmitter {
         this.muteEndIfEmpty = !!options.emitEndIfEmpty;
         this.interval = options.interval || 0;
 
-        Object.assign( this, config() );
+        assign( this, config() );
 
         if( steps && steps.length ) {
             this.append( steps );
@@ -80,7 +96,7 @@ class Sequence extends EventEmitter {
     }
 
     clear() {
-        Object.assign( this, config() );
+        assign( this, config() );
     }
 
     next( inner = false ) {
@@ -185,58 +201,58 @@ class Sequence extends EventEmitter {
             this.running && this.next( true );
         }, duration );
     }
+
+    static all( ...args ) {
+        const { steps, interval, cb } = parseArguments( ...args );
+        const sequence = new Sequence( steps, { interval } );
+
+        isFunction( cb ) && cb.call( sequence, sequence );
+
+        return new Promise( ( resolve, reject ) => {
+            sequence.on( 'end', results => {
+                resolve( results );
+            } );
+            sequence.on( 'failed', () => {
+                sequence.stop();
+                reject( sequence.results );
+            } );
+        } );
+    }
+
+    static chain( ...args ) {
+        const { steps, interval, cb } = parseArguments( ...args );
+        const sequence = new Sequence( steps, { interval } );
+        isFunction( cb ) && cb.call( sequence, sequence );
+        return new Promise( resolve => {
+            sequence.on( 'end', results => {
+                resolve( results );
+            } );
+        } );
+    }
+
+    static any( ...args ) {
+        const { steps, interval, cb } = parseArguments( ...args );
+        const sequence = new Sequence( steps, { interval } );
+        isFunction( cb ) && cb.call( sequence, sequence );
+        return new Promise( ( resolve, reject ) => {
+            sequence.on( 'success', () => {
+                resolve( sequence.results );
+                sequence.stop();
+            } );
+
+            sequence.on( 'end', () => {
+                reject( sequence.results );
+            } );
+        } );
+    }
 }
 
 Sequence.SUCCEEDED = 1;
 Sequence.FAILED = 0;
 
-Sequence.all = ( ...args ) => {
-    const { steps, interval, cb } = parseArguments( ...args );
-    const sequence = new Sequence( steps, { interval } );
-
-    isFunction( cb ) && cb.call( sequence, sequence );
-
-    return new Promise( ( resolve, reject ) => {
-        sequence.on( 'end', results => {
-            resolve( results );
-        } );
-        sequence.on( 'failed', () => {
-            sequence.stop();
-            reject( sequence.results );
-        } );
-    } );
-};
-
-Sequence.chain = ( ...args ) => {
-    const { steps, interval, cb } = parseArguments( ...args );
-    const sequence = new Sequence( steps, { interval } );
-    isFunction( cb ) && cb.call( sequence, sequence );
-    return new Promise( resolve => {
-        sequence.on( 'end', results => {
-            resolve( results );
-        } );
-    } );
-};
-
-Sequence.any = ( ...args ) => {
-    const { steps, interval, cb } = parseArguments( ...args );
-    const sequence = new Sequence( steps, { interval } );
-    isFunction( cb ) && cb.call( sequence, sequence );
-    return new Promise( ( resolve, reject ) => {
-        sequence.on( 'success', () => {
-            resolve( sequence.results );
-            sequence.stop();
-        } );
-
-        sequence.on( 'end', () => {
-            reject( sequence.results );
-        } );
-    } );
-};
-
 Sequence.Error = class {
     constructor( options ) {
-        Object.assign( this, options );
+        assign( this, options );
     }
 };
 
