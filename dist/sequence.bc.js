@@ -519,7 +519,7 @@ defaultExport.prototype.removeAllListeners = function removeAllListeners ( rule 
     return this;
 };
 
-function assign( dest ) {
+var assign = function ( dest ) {
     var sources = [], len = arguments.length - 1;
     while ( len-- > 0 ) sources[ len ] = arguments[ len + 1 ];
 
@@ -536,7 +536,7 @@ function assign( dest ) {
         return assign.apply( void 0, [ dest ].concat( sources.splice( 1, sources.length - 1 ) ) );
     }
     return dest;
-}
+};
 
 function config() {
     return {

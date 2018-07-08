@@ -469,7 +469,7 @@ class EventEmitter {
     }
 }
 
-function assign( dest, ...sources ) {
+const assign = ( dest, ...sources ) => {
     if( isFunction( Object.assign ) ) {
         return Object.assign( dest, ...sources );
     }
@@ -483,7 +483,7 @@ function assign( dest, ...sources ) {
         return assign( dest, ...sources.splice( 1, sources.length - 1 ) );
     }
     return dest;
-}
+};
 
 function config() {
     return {
