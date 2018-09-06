@@ -1,6 +1,6 @@
 {
     "name": "@lvchengbin/sequence",
-    "version": "1.1.9",
+    "version": "2.0.0",
     "description": "A light library for executing multiple steps in sequence.",
     "keywords": [
         "sequence",
