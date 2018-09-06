@@ -1,5 +1,4 @@
 import sleep from '@lvchengbin/sleep';
-import Promise from '@lvchengbin/promise';
 import Sequence from '../src/sequence';
 
 describe( 'Sequence', () => {

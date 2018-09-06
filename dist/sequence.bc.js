@@ -23,261 +23,6 @@
 
     function isFunction (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction( fn ); }
 
-    function isPromise (p) { return p && isFunction( p.then ); }
-
-    var Promise = (function () {
-        function Promise( fn ) {
-            if( !( this instanceof Promise ) ) {
-                throw new TypeError( this + ' is not a promise ' );
-            }
-
-            if( !isFunction( fn ) ) {
-                throw new TypeError( 'Promise resolver ' + fn + ' is not a function' );
-            }
-
-            this[ '[[PromiseStatus]]' ] = 'pending';
-            this[ '[[PromiseValue]]' ]= null;
-            this[ '[[PromiseThenables]]' ] = [];
-            try {
-                fn( promiseResolve.bind( null, this ), promiseReject.bind( null, this ) );
-            } catch( e ) {
-                if( this[ '[[PromiseStatus]]' ] === 'pending' ) {
-                    promiseReject.bind( null, this )( e );
-                }
-            }
-        }
-
-        Promise.prototype.then = function then ( resolved, rejected ) {
-            var promise = new Promise( function () {} );
-            this[ '[[PromiseThenables]]' ].push( {
-                resolve : isFunction( resolved ) ? resolved : null,
-                reject : isFunction( rejected ) ? rejected : null,
-                called : false,
-                promise: promise
-            } );
-            if( this[ '[[PromiseStatus]]' ] !== 'pending' ) { promiseExecute( this ); }
-            return promise;
-        };
-
-        Promise.prototype.catch = function catch$1 ( reject ) {
-            return this.then( null, reject );
-        };
-
-        return Promise;
-    }());
-
-    Promise.resolve = function( value ) {
-        if( !isFunction( this ) ) {
-            throw new TypeError( 'Promise.resolve is not a constructor' );
-        }
-        /**
-         * @todo
-         * check if the value need to return the resolve( value )
-         */
-        return new Promise( function (resolve) {
-            resolve( value );
-        } );
-    };
-
-    Promise.reject = function( reason ) {
-        if( !isFunction( this ) ) {
-            throw new TypeError( 'Promise.reject is not a constructor' );
-        }
-        return new Promise( function ( resolve, reject ) {
-            reject( reason );
-        } );
-    };
-
-    Promise.all = function( promises ) {
-        var rejected = false;
-        var res = [];
-        return new Promise( function ( resolve, reject ) {
-            var remaining = 0;
-            var then = function ( p, i ) {
-                if( !isPromise( p ) ) {
-                    p = Promise.resolve( p );
-                }
-                p.then( function (value) {
-                    res[ i ] = value;
-                    setTimeout( function () {
-                        if( --remaining === 0 ) { resolve( res ); }
-                    }, 0 );
-                }, function (reason) {
-                    if( !rejected ) {
-                        reject( reason );
-                        rejected = true;
-                    }
-                } );
-            };
-
-            var i = 0;
-            for( var i$1 = 0, list = promises; i$1 < list.length; i$1 += 1 ) {
-                var promise = list[i$1];
-
-                remaining++;
-                then( promise, i++ );
-            }
-            if( !i ) {
-                resolve( res );
-            }
-        } );
-    };
-
-    Promise.race = function( promises ) {
-        var resolved = false;
-        var rejected = false;
-
-        return new Promise( function ( resolve, reject ) {
-            function onresolved( value ) {
-                if( !resolved && !rejected ) {
-                    resolve( value );
-                    resolved = true;
-                }
-            }
-
-            function onrejected( reason ) {
-                if( !resolved && !rejected ) {
-                    reject( reason );
-                    rejected = true;
-                }
-            }
-
-            for( var i = 0, list = promises; i < list.length; i += 1 ) {
-                var promise = list[i];
-
-                if( !isPromise( promise ) ) {
-                    promise = Promise.resolve( promise );
-                }
-                promise.then( onresolved, onrejected );
-            }
-        } );
-    };
-
-    function promiseExecute( promise ) {
-        var thenable,
-            p;
-
-        if( promise[ '[[PromiseStatus]]' ] === 'pending' ) { return; }
-        if( !promise[ '[[PromiseThenables]]' ].length ) { return; }
-
-        var then = function ( p, t ) {
-            p.then( function (value) {
-                promiseResolve( t.promise, value );
-            }, function (reason) {
-                promiseReject( t.promise, reason );
-            } );
-        };
-
-        while( promise[ '[[PromiseThenables]]' ].length ) {
-            thenable = promise[ '[[PromiseThenables]]' ].shift();
-
-            if( thenable.called ) { continue; }
-
-            thenable.called = true;
-
-            if( promise[ '[[PromiseStatus]]' ] === 'resolved' ) {
-                if( !thenable.resolve ) {
-                    promiseResolve( thenable.promise, promise[ '[[PromiseValue]]' ] );
-                    continue;
-                }
-                try {
-                    p = thenable.resolve.call( null, promise[ '[[PromiseValue]]' ] );
-                } catch( e ) {
-                    then( Promise.reject( e ), thenable );
-                    continue;
-                }
-                if( p && ( typeof p === 'function' || typeof p === 'object' ) && p.then ) {
-                    then( p, thenable );
-                    continue;
-                }
-            } else {
-                if( !thenable.reject ) {
-                    promiseReject( thenable.promise, promise[ '[[PromiseValue]]' ] ); 
-                    continue;
-                }
-                try {
-                    p = thenable.reject.call( null, promise[ '[[PromiseValue]]' ] );
-                } catch( e ) {
-                    then( Promise.reject( e ), thenable );
-                    continue;
-                }
-                if( ( typeof p === 'function' || typeof p === 'object' ) && p.then ) {
-                    then( p, thenable );
-                    continue;
-                }
-            }
-            promiseResolve( thenable.promise, p );
-        }
-        return promise;
-    }
-
-    function promiseResolve( promise, value ) {
-        if( !( promise instanceof Promise ) ) {
-            return new Promise( function (resolve) {
-                resolve( value );
-            } );
-        }
-        if( promise[ '[[PromiseStatus]]' ] !== 'pending' ) { return; }
-        if( value === promise ) {
-            /**
-             * thie error should be thrown, defined ES6 standard
-             * it would be thrown in Chrome but not in Firefox or Safari
-             */
-            throw new TypeError( 'Chaining cycle detected for promise #<Promise>' );
-        }
-
-        if( value !== null && ( typeof value === 'function' || typeof value === 'object' ) ) {
-            var then;
-
-            try {
-                then = value.then;
-            } catch( e ) {
-                return promiseReject( promise, e );
-            }
-
-            if( typeof then === 'function' ) {
-                then.call( value, 
-                    promiseResolve.bind( null, promise ),
-                    promiseReject.bind( null, promise )
-                );
-                return;
-            }
-        }
-        promise[ '[[PromiseStatus]]' ] = 'resolved';
-        promise[ '[[PromiseValue]]' ] = value;
-        promiseExecute( promise );
-    }
-
-    function promiseReject( promise, value ) {
-        if( !( promise instanceof Promise ) ) {
-            return new Promise( function ( resolve, reject ) {
-                reject( value );
-            } );
-        }
-        promise[ '[[PromiseStatus]]' ] = 'rejected';
-        promise[ '[[PromiseValue]]' ] = value;
-        promiseExecute( promise );
-    }
-
-    /**
-     * async function
-     *
-     * @syntax: 
-     *  async function() {}
-     *  async () => {}
-     *  async x() => {}
-     *
-     * @compatibility
-     * IE: no
-     * Edge: >= 15
-     * Android: >= 5.0
-     *
-     */
-
-    function isAsyncFunction$1 (fn) { return ( {} ).toString.call( fn ) === '[object AsyncFunction]'; }
-
-    function isFunction$1 (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$1( fn ); }
-
     function isUndefined() {
         return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
     }
@@ -290,7 +35,7 @@
         for( var i = 0, list = methods; i < list.length; i += 1 ) {
             var method = list[i];
 
-            if( !isFunction$1( Map.prototype[ method ] ) ) { return false; }
+            if( !isFunction( Map.prototype[ method ] ) ) { return false; }
         }
         return true;
     };
@@ -443,9 +188,9 @@
      *
      */
 
-    function isAsyncFunction$2 (fn) { return ( {} ).toString.call( fn ) === '[object AsyncFunction]'; }
+    function isAsyncFunction$1 (fn) { return ( {} ).toString.call( fn ) === '[object AsyncFunction]'; }
 
-    function isFunction$2 (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$2( fn ); }
+    function isFunction$1 (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$1( fn ); }
 
     function isUndefined$1() {
         return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
@@ -460,7 +205,7 @@
         for( var i = 0, list = methods$1; i < list.length; i += 1 ) {
             var method = list[i];
 
-            if( !isFunction$2( Set.prototype[ method ] ) ) { return false; }
+            if( !isFunction$1( Set.prototype[ method ] ) ) { return false; }
         }
         return true;
     };
@@ -595,9 +340,9 @@
      *
      */
 
-    function isAsyncFunction$3 (fn) { return ( {} ).toString.call( fn ) === '[object AsyncFunction]'; }
+    function isAsyncFunction$2 (fn) { return ( {} ).toString.call( fn ) === '[object AsyncFunction]'; }
 
-    function isFunction$3 (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$3( fn ); }
+    function isFunction$2 (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$2( fn ); }
 
     function isRegExp (reg) { return ({}).toString.call( reg ) === '[object RegExp]'; }
 
@@ -651,7 +396,7 @@
         var checker;
         if( isString( rule ) ) {
             checker = function (name) { return rule === name; };
-        } else if( isFunction$3( rule ) ) {
+        } else if( isFunction$2( rule ) ) {
             checker = rule;
         } else if( isRegExp( rule ) ) {
             checker = function (name) {
@@ -668,7 +413,7 @@
         return this;
     };
 
-    function isPromise$1 (p) { return p && isFunction$3( p.then ); }
+    function isPromise (p) { return p && isFunction$2( p.then ); }
 
     function isUndefined$2() {
         return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
@@ -689,15 +434,15 @@
      *
      */
 
-    function isAsyncFunction$4 (fn) { return ( {} ).toString.call( fn ) === '[object AsyncFunction]'; }
+    function isAsyncFunction$3 (fn) { return ( {} ).toString.call( fn ) === '[object AsyncFunction]'; }
 
-    function isFunction$4 (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$4( fn ); }
+    function isFunction$3 (fn) { return ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$3( fn ); }
 
     var assign = function ( dest ) {
         var sources = [], len = arguments.length - 1;
         while ( len-- > 0 ) sources[ len ] = arguments[ len + 1 ];
 
-        if( isFunction$4( Object.assign ) ) {
+        if( isFunction$3( Object.assign ) ) {
             return Object.assign.apply( Object, [ dest ].concat( sources ) );
         }
         var obj = sources[ 0 ];
@@ -746,7 +491,7 @@
             if( steps && steps.length ) {
                 this.append( steps );
             } else if( !this.muteEndIfEmpty ) {
-                if( typeof process === 'object' && isFunction$3( process.nextTick ) ) {
+                if( typeof process === 'object' && isFunction$2( process.nextTick ) ) {
                     process.nextTick( function () {
                         this$1.emit( 'end', this$1.results, this$1 );
                     } );
@@ -778,7 +523,7 @@
 
             var dead = this.index >= this.steps.length;
 
-            if( isFunction$3( steps ) ) {
+            if( isFunction$2( steps ) ) {
                 this.steps.push( steps );
             } else {
                 for( var i = 0, list = steps; i < list.length; i += 1 ) {
@@ -847,7 +592,7 @@
                      * if the step function doesn't return a promise instance,
                      * create a resolved promise instance with the returned value as its value
                      */
-                    if( !isPromise$1( promise ) ) {
+                    if( !isPromise( promise ) ) {
                         promise = Promise.resolve( promise );
                     }
                 } catch( e ) {
@@ -921,7 +666,7 @@
             var cb = ref.cb;
             var sequence = new Sequence( steps, { interval: interval } );
 
-            isFunction$3( cb ) && cb.call( sequence, sequence );
+            isFunction$2( cb ) && cb.call( sequence, sequence );
 
             return new Promise( function ( resolve, reject ) {
                 sequence.on( 'end', function (results) {
@@ -943,7 +688,7 @@
             var interval = ref.interval;
             var cb = ref.cb;
             var sequence = new Sequence( steps, { interval: interval } );
-            isFunction$3( cb ) && cb.call( sequence, sequence );
+            isFunction$2( cb ) && cb.call( sequence, sequence );
             return new Promise( function (resolve) {
                 sequence.on( 'end', function (results) {
                     resolve( results );
@@ -960,7 +705,7 @@
             var interval = ref.interval;
             var cb = ref.cb;
             var sequence = new Sequence( steps, { interval: interval } );
-            isFunction$3( cb ) && cb.call( sequence, sequence );
+            isFunction$2( cb ) && cb.call( sequence, sequence );
             return new Promise( function ( resolve, reject ) {
                 sequence.on( 'success', function () {
                     resolve( sequence.results );
@@ -988,7 +733,7 @@
     }());
 
     function parseArguments( steps, interval, cb ) {
-        if( isFunction$3( interval ) ) {
+        if( isFunction$2( interval ) ) {
             cb = interval;
             interval = 0;
         }

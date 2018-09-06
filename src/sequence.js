@@ -1,4 +1,3 @@
-import Promise from '@lvchengbin/promise';
 import EventEmitter from '@lvchengbin/event-emitter';
 import isFunction from '@lvchengbin/is/src/function';
 import isPromise from '@lvchengbin/is/src/promise';

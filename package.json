@@ -1,55 +1,50 @@
 {
-  "name": "@lvchengbin/sequence",
-  "version": "1.1.9",
-  "description": "A light library for executing multiple steps in sequence.",
-  "keywords": [
-    "sequence",
-    "order",
-    "step",
-    "promise"
-  ],
-  "main": "dist/sequence.cjs.js",
-  "jsnext:main": "src/sequence.js",
-  "scripts": {
-    "build": "rollup -c",
-    "prepublish": "npm run build",
-    "test": "karma start",
-    "test-es5": "karma start --es5=true",
-    "lint": "eslint ./ --cache --ignore-path .eslintignore",
-    "precommit-msg": "echo 'Pre-commit checks...' && exit 0"
-  },
-  "pre-commit": [
-    "precommit-msg",
-    "lint"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:LvChengbin/sequence.git"
-  },
-  "author": "LvChengbin",
-  "license": "MIT",
-  "devDependencies": {
-    "@lvchengbin/sleep": "0.0.2",
-    "buble": "^0.19.3",
-    "eslint": "^5.4.0",
-    "jasmine-core": "^3.2.1",
-    "karma": "^3.0.0",
-    "karma-chrome-launcher": "^2.2.0",
-    "karma-jasmine": "^1.1.2",
-    "karma-rollup-preprocessor": "^6.0.1",
-    "karma-yolk-preprocessor": "0.0.7",
-    "koa-static": "^5.0.0",
-    "optimist": "^0.6.1",
-    "pre-commit": "^1.2.2",
-    "puppeteer": "^1.7.0",
-    "rollup": "^0.64.1",
-    "rollup-plugin-buble": "^0.19.2",
-    "rollup-plugin-node-resolve": "^3.3.0"
-  },
-  "dependencies": {
-    "@lvchengbin/event-emitter": "^0.1.4",
-    "@lvchengbin/is": "0.0.18",
-    "@lvchengbin/kit": "0.0.0",
-    "@lvchengbin/promise": "^1.1.7"
-  }
+    "name": "@lvchengbin/sequence",
+    "version": "1.1.9",
+    "description": "A light library for executing multiple steps in sequence.",
+    "keywords": [
+        "sequence",
+        "order",
+        "step",
+        "promise"
+    ],
+    "main": "dist/sequence.cjs.js",
+    "jsnext:main": "src/sequence.js",
+    "scripts": {
+        "build": "rollup -c",
+        "prepublish": "npm run build",
+        "test": "karma start",
+        "lint": "eslint ./ --cache --ignore-path .eslintignore",
+        "precommit-msg": "echo 'Pre-commit checks...' && exit 0"
+    },
+    "pre-commit": [
+        "precommit-msg",
+        "lint"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git@github.com:LvChengbin/sequence.git"
+    },
+    "author": "LvChengbin",
+    "license": "MIT",
+    "devDependencies": {
+        "@lvchengbin/sleep": "0.0.2",
+        "eslint": "^5.4.0",
+        "jasmine-core": "^3.2.1",
+        "karma": "^3.0.0",
+        "karma-chrome-launcher": "^2.2.0",
+        "karma-jasmine": "^1.1.2",
+        "karma-rollup-preprocessor": "^6.0.1",
+        "koa-static": "^5.0.0",
+        "optimist": "^0.6.1",
+        "pre-commit": "^1.2.2",
+        "puppeteer": "^1.7.0",
+        "rollup": "^0.64.1",
+        "rollup-plugin-node-resolve": "^3.3.0"
+    },
+    "dependencies": {
+        "@lvchengbin/event-emitter": "^0.1.4",
+        "@lvchengbin/is": "0.0.18",
+        "@lvchengbin/kit": "0.0.0"
+    }
 }
