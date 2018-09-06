@@ -249,9 +249,39 @@ function promiseReject( promise, value ) {
     promiseExecute( promise );
 }
 
+/**
+ * async function
+ *
+ * @syntax: 
+ *  async function() {}
+ *  async () => {}
+ *  async x() => {}
+ *
+ * @compatibility
+ * IE: no
+ * Edge: >= 15
+ * Android: >= 5.0
+ *
+ */
+
+var isAsyncFunction$1 = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
+
+var isFunction$1 = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$1( fn );
+
 function isUndefined() {
     return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
 }
+
+const defineProperty = Object.defineProperty;
+const methods = [ 'clear', 'delete', 'entries', 'forEach', 'get', 'has', 'keys', 'set', 'values' ];
+
+const supportNativeMap = () => {
+    if( typeof Map === 'undefined' ) return false;
+    for( const method of methods ) {
+        if( !isFunction$1( Map.prototype[ method ] ) ) return false;
+    }
+    return true;
+};
 
 function find( haystack, key ) {
     for( let item of haystack ) {
@@ -260,154 +290,276 @@ function find( haystack, key ) {
     return false;
 }
 
-class Map {
-    constructor( iterable = [] ) {
-        if( !( this instanceof Map ) ) {
+class M {
+    constructor( iterable = [], nativeMap = true ) {
+        if( !( this instanceof M ) ) {
             throw new TypeError( 'Constructor Map requires \'new\'' );
         }
-        this.map = iterable || [];
-    }
-    get size() {
-        return this.map.length;
-    }
 
-    get( key ) {
-        const data = find( this.map, key );
-        return data ? data[ 1 ] : undefined;
-    }
-
-    set( key, value ) {
-        const data = find( this.map, key );
-        if( data ) {
-            data[ 1 ] = value;
-        } else {
-            this.map.push( [ key, value ] );
+        if( nativeMap && supportNativeMap() ) {
+            return new Map( iterable );
         }
-        return this;
-    }
 
-    delete( key ) {
-        for( let i = 0, l = this.map.length; i < l; i += 1 ) {
-            const item = this.map[ i ];
-            if( item[ 0 ] === key ) {
-                this.map.splice( i, 1 );
-                return true;
+        const map = iterable || [];
+
+        defineProperty( map, 'size', {
+            enumerable : false,
+            get() {
+                return this.length;
             }
-            
-        }
-        return false;
-    }
+        } );
 
-    clear() {
-        this.map= [];
-    }
+        defineProperty( map, 'get', {
+            enumerable : false,
+            value : function( key ) {
+                const data = find( this, key );
+                return data ? data[ 1 ] : undefined;
+            }
+        } );
 
-    forEach( callback, thisArg ) {
-        isUndefined( thisArg ) && ( this.Arg = this );
-        for( let item of this.map ) {
-            callback.call( thisArg, item[ 1 ], item[ 0 ], this );
-        }
-    }
+        defineProperty( map, 'set', {
+            enumerable : false,
+            value : function( key, value ) {
+                const data = find( this, key );
+                if( data ) {
+                    data[ 1 ] = value;
+                } else {
+                    this.push( [ key, value ] );
+                }
+                return this;
+            }
+        } );
 
-    has( key ) {
-        return !!find( this.map, key );
-    }
+        defineProperty( map, 'delete', {
+            enumerable : false,
+            value : function( key ) {
+                for( let i = 0, l = this.length; i < l; i += 1 ) {
+                    if( this[ i ][ 0 ] === key ) {
+                        this.splice( i, 1 );
+                        return true;
+                    }
+                }
+                return false;
+            }
+        } );
 
-    keys() {
-        const keys = [];
-        for( let item of this.map ) {
-            keys.push( item[ 0 ] );
-        }
-        return keys;
-    }
+        defineProperty( map, 'clear', {
+            enumerable : false,
+            value : function() {
+                this.length = 0;
+            }
+        } );
 
-    entries() {
-        return this.map;
-    }
+        defineProperty( map, 'forEach', {
+            enumerable : false,
+            value : function( callback, thisArg ) {
+                isUndefined( thisArg ) && ( thisArg = this );
+                for( let item of this ) {
+                    callback.call( thisArg, item[ 1 ], item[ 0 ], this );
+                }
+            }
+        } );
 
-    values() {
-        const values = [];
-        for( let item of this.map ) {
-            values.push( item[ 1 ] );
-        }
-        return values;
+        defineProperty( map, 'has', {
+            enumerable : false,
+            value : function( key ) {
+                return !!find( this, key );
+            }
+        } );
+
+        defineProperty( map, 'keys', {
+            enumerable : false,
+            value : function() {
+                const keys = [];
+                for( let item of this ) {
+                    keys.push( item[ 0 ] );
+                }
+                return keys;
+            }
+        } );
+
+        defineProperty( map, 'entries', {
+            enumerable : false,
+            value : function() {
+                return this;
+            }
+        } );
+
+        defineProperty( map, 'values', {
+            enumerable : false,
+            value : function() {
+                const values = [];
+                for( let item of this ) {
+                    values.push( item[ 1 ] );
+                }
+                return values;
+            }
+        } );
+        return map;
     }
 }
 
-class Set {
-    constructor( iterable = [] ) {
-        if( !( this instanceof Set ) ) {
+/**
+ * async function
+ *
+ * @syntax: 
+ *  async function() {}
+ *  async () => {}
+ *  async x() => {}
+ *
+ * @compatibility
+ * IE: no
+ * Edge: >= 15
+ * Android: >= 5.0
+ *
+ */
+
+var isAsyncFunction$2 = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
+
+var isFunction$2 = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$2( fn );
+
+function isUndefined$1() {
+    return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
+}
+
+const defineProperty$1 = Object.defineProperty;
+const g = typeof global === 'undefined' ? window : global;
+const methods$1 = [ 'add', 'clear', 'delete', 'entries', 'forEach', 'has', 'values' ];
+
+const supportNativeSet = () => {
+    if( !g.Set ) return false;
+    for( let method of methods$1 ) {
+        if( !isFunction$2( Set.prototype[ method ] ) ) return false;
+    }
+    return true;
+};
+
+class S {
+    constructor( iterable = [], nativeSet = true ) {
+        if( nativeSet && supportNativeSet() ) {
+            return new g.Set( iterable );
+        }
+
+        if( !( this instanceof S ) ) {
             throw new TypeError( 'Constructor Set requires \'new\'' );
         }
-        this.set = [];
 
-        if( iterable && iterable.length ) {
-            for( let item of iterable ) this.add( item );
+        const set = [];
+
+        defineProperty$1( set, 'size', {
+            enumerable : false,
+            get() {
+                return set.length;
+            }
+        } );
+
+        defineProperty$1( set, 'add', {
+            enumerable : false,
+            value : function( value ) {
+                const i = this.indexOf( value );
+                if( i > -1 ) {
+                    this[ i ] = value;
+                } else {
+                    this.push( value );
+                }
+                return this;
+            }
+        } );
+
+        defineProperty$1( set, 'delete', {
+            enumerable : false,
+            value : function( value ) {
+                const i = this.indexOf( value );
+                if( i > -1 ) {
+                    this.splice( i, 1 );
+                    return true;
+                }
+                return false;
+            }
+        } );
+
+        defineProperty$1( set, 'clear', {
+            enumerable : false,
+            value : function() {
+                this.length = 0;
+            }
+        } );
+
+        defineProperty$1( set, 'forEach', {
+            enumerable : false,
+            value : function( callback, thisArg ) {
+                isUndefined$1( thisArg ) && ( thisArg = this );
+                for( let item of this ) {
+                    callback.call( thisArg, item, item, this );
+                }
+            }
+        } );
+
+        defineProperty$1( set, 'has', {
+            enumerable : false,
+            value : function( value ) {
+                return this.indexOf( value ) > -1;
+            }
+        } );
+
+        defineProperty$1( set, 'keys', {
+            enumerable : false,
+            value : function() {
+                return this.values();
+            }
+        } );
+
+        defineProperty$1( set, 'entries', {
+            enumerable : false,
+            value : function() {
+                const res = [];
+                for( let item of this ) {
+                    res.push( [ item, item ] ); 
+                }
+                return res;
+            }
+        } );
+
+        defineProperty$1( set, 'values', {
+            enumerable : false,
+            value : function() {
+                return this;
+            }
+        } );
+
+        if( iterable ) {
+            for( const item of iterable ) set.add( item );
         }
-    }
-
-    get size() {
-        return this.set.length;
-    }
-
-    add( value ) {
-        const i = this.set.indexOf( value );
-        if( i > -1 ) {
-            this.set[ i ] = value;
-        } else {
-            this.set.push( value );
-        }
-        return this;
-    }
-
-    delete( value ) {
-        const i = this.set.indexOf( value );
-        if( i > -1 ) {
-            this.set.splice( i, 1 );
-            return true;
-        }
-        return false;
-    }
-
-    clear() {
-        this.set = [];
-    }
-
-    forEach( callback, thisArg ) {
-        isUndefined( thisArg ) && ( this.Arg = this );
-        for( let item of this.set ) {
-            callback.call( thisArg, item, item, this );
-        }
-    }
-
-    has( value ) {
-        return this.set.indexOf( value ) > -1;
-    }
-
-    keys() {
-        return this.values();
-    }
-
-    entries() {
-        const res = [];
-        for( let item of this.set ) {
-            res.push( [ item, item ] ); 
-        }
-        return res;
-    }
-
-    values() {
-        return this.set;
+        return set;
     }
 }
 
 var isString = str => typeof str === 'string' || str instanceof String;
 
+/**
+ * async function
+ *
+ * @syntax: 
+ *  async function() {}
+ *  async () => {}
+ *  async x() => {}
+ *
+ * @compatibility
+ * IE: no
+ * Edge: >= 15
+ * Android: >= 5.0
+ *
+ */
+
+var isAsyncFunction$3 = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
+
+var isFunction$3 = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$3( fn );
+
 var isRegExp = reg => ({}).toString.call( reg ) === '[object RegExp]';
 
 class EventEmitter {
     constructor() {
-        this.__listeners = new Map();
+        this.__listeners = new M();
     }
 
     on( evt, handler ) {
@@ -415,7 +567,7 @@ class EventEmitter {
         let handlers = listeners.get( evt );
 
         if( !handlers ) {
-            handlers = new Set();
+            handlers = new S();
             listeners.set( evt, handlers );
         }
         handlers.add( handler );
@@ -447,7 +599,7 @@ class EventEmitter {
         let checker;
         if( isString( rule ) ) {
             checker = name => rule === name;
-        } else if( isFunction( rule ) ) {
+        } else if( isFunction$3( rule ) ) {
             checker = rule;
         } else if( isRegExp( rule ) ) {
             checker = name => {
@@ -465,8 +617,33 @@ class EventEmitter {
     }
 }
 
+var isPromise$1 = p => p && isFunction$3( p.then );
+
+function isUndefined$2() {
+    return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
+}
+
+/**
+ * async function
+ *
+ * @syntax: 
+ *  async function() {}
+ *  async () => {}
+ *  async x() => {}
+ *
+ * @compatibility
+ * IE: no
+ * Edge: >= 15
+ * Android: >= 5.0
+ *
+ */
+
+var isAsyncFunction$4 = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
+
+var isFunction$4 = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$4( fn );
+
 const assign = ( dest, ...sources ) => {
-    if( isFunction( Object.assign ) ) {
+    if( isFunction$4( Object.assign ) ) {
         return Object.assign( dest, ...sources );
     }
     const obj = sources[ 0 ];
@@ -512,7 +689,7 @@ class Sequence extends EventEmitter {
         if( steps && steps.length ) {
             this.append( steps );
         } else if( !this.muteEndIfEmpty ) {
-            if( typeof process === 'object' && isFunction( process.nextTick ) ) {
+            if( typeof process === 'object' && isFunction$3( process.nextTick ) ) {
                 process.nextTick( () => {
                     this.emit( 'end', this.results, this );
                 } );
@@ -538,7 +715,7 @@ class Sequence extends EventEmitter {
     append( steps ) {
         const dead = this.index >= this.steps.length;
 
-        if( isFunction( steps ) ) {
+        if( isFunction$3( steps ) ) {
             this.steps.push( steps );
         } else {
             for( let step of steps ) {
@@ -549,7 +726,7 @@ class Sequence extends EventEmitter {
     }
 
     go( n ) {
-        if( isUndefined( n ) ) return;
+        if( isUndefined$2( n ) ) return;
         this.index = n;
         if( this.index > this.steps.length ) {
             this.index = this.steps.length;
@@ -582,7 +759,7 @@ class Sequence extends EventEmitter {
         if( !this.steps[ this.index ] ) {
             return Promise.reject( new Sequence.Error( {
                 errno : 1,
-                errmsg : 'no more step can be executed.'
+                errmsg : 'no more steps.'
             } ) );
         }
 
@@ -602,7 +779,7 @@ class Sequence extends EventEmitter {
                  * if the step function doesn't return a promise instance,
                  * create a resolved promise instance with the returned value as its value
                  */
-                if( !isPromise( promise ) ) {
+                if( !isPromise$1( promise ) ) {
                     promise = Promise.resolve( promise );
                 }
             } catch( e ) {
@@ -667,7 +844,7 @@ class Sequence extends EventEmitter {
         const { steps, interval, cb } = parseArguments( ...args );
         const sequence = new Sequence( steps, { interval } );
 
-        isFunction( cb ) && cb.call( sequence, sequence );
+        isFunction$3( cb ) && cb.call( sequence, sequence );
 
         return new Promise( ( resolve, reject ) => {
             sequence.on( 'end', results => {
@@ -683,7 +860,7 @@ class Sequence extends EventEmitter {
     static chain( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
         const sequence = new Sequence( steps, { interval } );
-        isFunction( cb ) && cb.call( sequence, sequence );
+        isFunction$3( cb ) && cb.call( sequence, sequence );
         return new Promise( resolve => {
             sequence.on( 'end', results => {
                 resolve( results );
@@ -694,7 +871,7 @@ class Sequence extends EventEmitter {
     static any( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
         const sequence = new Sequence( steps, { interval } );
-        isFunction( cb ) && cb.call( sequence, sequence );
+        isFunction$3( cb ) && cb.call( sequence, sequence );
         return new Promise( ( resolve, reject ) => {
             sequence.on( 'success', () => {
                 resolve( sequence.results );
@@ -718,7 +895,7 @@ Sequence.Error = class {
 };
 
 function parseArguments( steps, interval, cb ) {
-    if( isFunction( interval ) ) {
+    if( isFunction$3( interval ) ) {
         cb = interval;
         interval = 0;
     }

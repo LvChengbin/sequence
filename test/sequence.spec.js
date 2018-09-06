@@ -4,10 +4,6 @@ import Sequence from '../src/sequence';
 
 describe( 'Sequence', () => {
     describe( 'Sequence.all', () => {
-
-        let seq = [];
-        let sequence = null;
-
         it( 'Should return a resolved promise directly if the steps is empty', done => {
             Sequence.all( [] ).then( () => {
                 done();
@@ -15,7 +11,8 @@ describe( 'Sequence', () => {
         } );
 
         it( 'Should have gotten correct params in each step', done => {
-            sequence = Sequence.all( [ 
+            const seq = [];
+            Sequence.all( [ 
                 () => {
                     return new Promise( resolve => {
                         setTimeout( () => {
@@ -41,15 +38,63 @@ describe( 'Sequence', () => {
             ] );
         } );
 
-        it( 'Should have executed each step in the order', done => {
-            sequence.then( () => {
+        it( 'Should have executed each step in order', done => {
+            const seq = [];
+            Sequence.all( [ 
+                () => {
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'a' );
+                            resolve( 'A' );
+                        }, 15 );
+                    } );
+                },
+                ( last, index, list ) => {
+                    expect( last.value ).toEqual( 'A' );
+                    expect( index ).toEqual( 1 );
+                    expect( list[ 0 ].value ).toEqual( 'A' );
+                    done();
+
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'b' );
+                            resolve( 'B' );
+                        }, 5 );
+                    } );
+                },
+                () => ( seq.push( 'c' ), 'C' )
+            ] ).then( () => {
                 expect( seq ).toEqual( [ 'a', 'b', 'c' ] );
                 done();
             } );
         } );
 
         it( 'Should have gotten an Array filled with values of each Promise instance', done => {
-            sequence.then( value => {
+            const seq = [];
+            Sequence.all( [ 
+                () => {
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'a' );
+                            resolve( 'A' );
+                        }, 15 );
+                    } );
+                },
+                ( last, index, list ) => {
+                    expect( last.value ).toEqual( 'A' );
+                    expect( index ).toEqual( 1 );
+                    expect( list[ 0 ].value ).toEqual( 'A' );
+                    done();
+
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'b' );
+                            resolve( 'B' );
+                        }, 5 );
+                    } );
+                },
+                () => ( seq.push( 'c' ), 'C' )
+            ] ).then( value => {
                 expect( [
                     value[ 0 ].value,
                     value[ 1 ].value,
@@ -85,9 +130,6 @@ describe( 'Sequence', () => {
     } );
 
     describe( 'Sequence.chain', () => {
-        let seq = [];
-        let sequence = null;
-
         it( 'Should return a resolved Promise directly if the steps is empty', done => {
             Sequence.chain( [] ).then( () => {
                 done();
@@ -95,7 +137,8 @@ describe( 'Sequence', () => {
         } );
 
         it( 'Should have gotten correct reasons in each step', done => {
-            sequence = Sequence.chain( [
+            const seq = [];
+            Sequence.chain( [
                 () => {
                     return new Promise( ( resolve, reject ) => {
                         setTimeout( () => {
@@ -135,14 +178,88 @@ describe( 'Sequence', () => {
         } );
 
         it( 'Should have executed in order', done => {
-            sequence.then( () => {
+            const seq = [];
+            Sequence.chain( [
+                () => {
+                    return new Promise( ( resolve, reject ) => {
+                        setTimeout( () => {
+                            seq.push( 'a' );
+                            reject( 'A' )
+                        }, 15 );
+                    } );
+                },
+                ( last, index, list ) => {
+                    expect( last.status ).toEqual( Sequence.FAILED );
+                    expect( index ).toEqual( 1 );
+                    expect( last.reason ).toEqual( 'A' );
+                    expect( last.time ).toBeLessThanOrEqual( +new Date );
+                    expect( list[ 0 ].status ).toEqual( Sequence.FAILED );
+                    return new Promise( ( resolve ) => {
+                        setTimeout( () => {
+                            seq.push( 'b' );
+                            resolve( 'B' );
+                        }, 5 );
+                    } );
+                },
+                ( last, index, list ) => {
+                    expect( last.status ).toEqual( Sequence.SUCCEEDED );
+                    expect( index ).toEqual( 2 );
+                    expect( last.value ).toEqual( 'B' );
+                    expect( last.time ).toBeLessThanOrEqual( +new Date );
+                    expect( list[ 1 ].status ).toEqual( Sequence.SUCCEEDED );
+                    done();
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'c' );
+                            resolve( 'C' );
+                        }, 5 );
+                    } );
+                }
+            ] ).then( () => {
                 expect( seq ).toEqual( [ 'a', 'b', 'c' ] );
                 done();
             } );
         } );
 
         it( 'Should have resolved after encountering a step resolved', done => {
-            sequence.then( value => {
+             const seq = [];
+            Sequence.chain( [
+                () => {
+                    return new Promise( ( resolve, reject ) => {
+                        setTimeout( () => {
+                            seq.push( 'a' );
+                            reject( 'A' )
+                        }, 15 );
+                    } );
+                },
+                ( last, index, list ) => {
+                    expect( last.status ).toEqual( Sequence.FAILED );
+                    expect( index ).toEqual( 1 );
+                    expect( last.reason ).toEqual( 'A' );
+                    expect( last.time ).toBeLessThanOrEqual( +new Date );
+                    expect( list[ 0 ].status ).toEqual( Sequence.FAILED );
+                    return new Promise( ( resolve ) => {
+                        setTimeout( () => {
+                            seq.push( 'b' );
+                            resolve( 'B' );
+                        }, 5 );
+                    } );
+                },
+                ( last, index, list ) => {
+                    expect( last.status ).toEqual( Sequence.SUCCEEDED );
+                    expect( index ).toEqual( 2 );
+                    expect( last.value ).toEqual( 'B' );
+                    expect( last.time ).toBeLessThanOrEqual( +new Date );
+                    expect( list[ 1 ].status ).toEqual( Sequence.SUCCEEDED );
+                    done();
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'c' );
+                            resolve( 'C' );
+                        }, 5 );
+                    } );
+                }
+            ] ).then( value => {
                 expect( value.length ).toEqual( 3 );
                 expect( value[ 2 ].status).toEqual( Sequence.SUCCEEDED );
                 expect( value[ 2 ].value ).toEqual( 'C' );
@@ -183,10 +300,9 @@ describe( 'Sequence', () => {
     } );
 
     describe( 'Sequence()', () => {
-        const seq = [];
-        let sequence;
         it( 'Secquence', done => {
-            sequence = new Sequence( [
+            const seq = [];
+            new Sequence( [
                 () => {
                     return new Promise( resolve => {
                         setTimeout( () => {
@@ -224,7 +340,37 @@ describe( 'Sequence', () => {
         } );
 
         it( 'Should have been executed in the order', done => {
-            sequence.append( () => {
+            const seq = [];
+            new Sequence( [
+                () => {
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'a' );
+                            resolve( 'A' );
+                        }, 20 );
+                    } );
+                },
+                () => {
+                    return new Promise( ( resolve, reject ) => {
+                        setTimeout( () => {
+                            seq.push( 'b' );
+                            reject( 'B' );
+                        }, 5 );
+                    } );
+                },
+                () => {
+                    seq.push( 'c' );
+                    return 'C';
+                },
+                () => {
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'd' );
+                            resolve( 'D' );
+                        }, 20 );
+                    } );
+                }
+            ] ).append( () => {
                 expect( seq ).toEqual( [ 'a', 'b', 'c', 'd' ] );
                 done();
                 seq.push( 'e' );
@@ -233,15 +379,48 @@ describe( 'Sequence', () => {
         } );
 
         it( 'append', done => {
+            const seq = [];
+            const sequence = new Sequence( [
+                () => {
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'a' );
+                            resolve( 'A' );
+                        }, 20 );
+                    } );
+                },
+                () => {
+                    return new Promise( ( resolve, reject ) => {
+                        setTimeout( () => {
+                            seq.push( 'b' );
+                            reject( 'B' );
+                        }, 5 );
+                    } );
+                },
+                () => {
+                    seq.push( 'c' );
+                    return 'C';
+                },
+                () => {
+                    return new Promise( resolve => {
+                        setTimeout( () => {
+                            seq.push( 'd' );
+                            resolve( 'D' );
+                        }, 20 );
+                    } );
+                }
+            ] );
             sequence.append( () => {
                 return new Promise( resolve => {
                     setTimeout( () => {
                         resolve( 'x' );
-                    }, 20 );
+                    }, 50 );
                 } );
             } );
-            expect( sequence.busy ).toBeTruthy();
-            done();
+            setTimeout( () => {
+                expect( sequence.busy ).toBeTruthy();
+                done();
+            }, 0 );
         } );
 
         it( 'run', done => {

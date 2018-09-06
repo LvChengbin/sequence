@@ -106,7 +106,7 @@ class Sequence extends EventEmitter {
         if( !this.steps[ this.index ] ) {
             return Promise.reject( new Sequence.Error( {
                 errno : 1,
-                errmsg : 'no more step can be executed.'
+                errmsg : 'no more steps.'
             } ) );
         }
 
