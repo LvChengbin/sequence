@@ -28,9 +28,14 @@ To execute and manage asynchronous functions in sequence.
 
 To install the package with `npm`.
 
-```js
+```bash
 $ npm i @lvchengbin/sequence --save
 ```
+We provide another version which is using the native `Promise` and other `ES6` features, and you can intall it with the `@next` tag:
+```bash
+$ npm i @lvchengbin/sequence@next --save
+```
+
 Then you can use it in nodejs code.
 ```js
 const Sequence = require( '@lvchengbin/sequence' );
