@@ -1,5 +1,7 @@
 # Sequence
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/LvChengbin/sequence.svg)](https://greenkeeper.io/)
+
 To execute and manage asynchronous functions in sequence.
 
 
