@@ -189,7 +189,7 @@ class Sequence extends EventEmitter {
 
     static all( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
-        const sequence = new Sequence( steps, { interval } );
+        const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
 
         isFunction( cb ) && cb.call( sequence, sequence );
 
@@ -206,7 +206,7 @@ class Sequence extends EventEmitter {
 
     static chain( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
-        const sequence = new Sequence( steps, { interval } );
+        const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
         isFunction( cb ) && cb.call( sequence, sequence );
         return new Promise( resolve => {
             sequence.on( 'end', results => {
@@ -217,7 +217,7 @@ class Sequence extends EventEmitter {
 
     static any( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
-        const sequence = new Sequence( steps, { interval } );
+        const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
         isFunction( cb ) && cb.call( sequence, sequence );
         return new Promise( ( resolve, reject ) => {
             sequence.on( 'success', () => {

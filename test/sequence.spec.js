@@ -5,9 +5,7 @@ import Sequence from '../src/sequence';
 describe( 'Sequence', () => {
     describe( 'Sequence.all', () => {
         it( 'Should return a resolved promise directly if the steps is empty', done => {
-            Sequence.all( [] ).then( () => {
-                done();
-            } );
+            Sequence.all( [] ).then( done() );
         } );
 
         it( 'Should have gotten correct params in each step', done => {
