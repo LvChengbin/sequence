@@ -561,6 +561,7 @@
 
         static all( ...args ) {
             const { steps, interval, cb } = parseArguments( ...args );
+            if( !steps.length ) return Promise.resolve( [] );
             const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
 
             isFunction$1( cb ) && cb.call( sequence, sequence );
@@ -578,6 +579,7 @@
 
         static chain( ...args ) {
             const { steps, interval, cb } = parseArguments( ...args );
+            if( !steps.length ) return Promise.resolve( [] );
             const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
             isFunction$1( cb ) && cb.call( sequence, sequence );
             return new Promise( resolve => {
@@ -589,6 +591,7 @@
 
         static any( ...args ) {
             const { steps, interval, cb } = parseArguments( ...args );
+            if( !steps.length ) return Promise.reject( [] );
             const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
             isFunction$1( cb ) && cb.call( sequence, sequence );
             return new Promise( ( resolve, reject ) => {

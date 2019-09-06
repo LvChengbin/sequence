@@ -598,6 +598,7 @@
             var steps = ref.steps;
             var interval = ref.interval;
             var cb = ref.cb;
+            if( !steps.length ) { return Promise.resolve( [] ); }
             var sequence = new Sequence( steps, { interval: interval, muteEndIfEmpty : true } );
 
             isFunction$1( cb ) && cb.call( sequence, sequence );
@@ -621,6 +622,7 @@
             var steps = ref.steps;
             var interval = ref.interval;
             var cb = ref.cb;
+            if( !steps.length ) { return Promise.resolve( [] ); }
             var sequence = new Sequence( steps, { interval: interval, muteEndIfEmpty : true } );
             isFunction$1( cb ) && cb.call( sequence, sequence );
             return new Promise( function (resolve) {
@@ -638,6 +640,7 @@
             var steps = ref.steps;
             var interval = ref.interval;
             var cb = ref.cb;
+            if( !steps.length ) { return Promise.reject( [] ); }
             var sequence = new Sequence( steps, { interval: interval, muteEndIfEmpty : true } );
             isFunction$1( cb ) && cb.call( sequence, sequence );
             return new Promise( function ( resolve, reject ) {
