@@ -1,8 +1,8 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
     typeof define === 'function' && define.amd ? define(factory) :
-    (global.Sequence = factory());
-}(this, (function () { 'use strict';
+    (global = global || self, global.Sequence = factory());
+}(this, function () { 'use strict';
 
     var isString = str => typeof str === 'string' || str instanceof String;
 
@@ -93,41 +93,6 @@
         return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
     }
 
-    /**
-     * async function
-     *
-     * @syntax: 
-     *  async function() {}
-     *  async () => {}
-     *  async x() => {}
-     *
-     * @compatibility
-     * IE: no
-     * Edge: >= 15
-     * Android: >= 5.0
-     *
-     */
-
-    var isAsyncFunction$1 = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
-
-    var isFunction$1 = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$1( fn );
-
-    const assign = ( dest, ...sources ) => {
-        if( isFunction$1( Object.assign ) ) {
-            return Object.assign( dest, ...sources );
-        }
-        const obj = sources[ 0 ];
-        for( let property in obj ) {
-            if( obj.hasOwnProperty( property ) ) {
-                dest[ property ] = obj[ property ];
-            }
-        }
-        if( sources.length > 1 ) {
-            return assign( dest, ...sources.splice( 1, sources.length - 1 ) );
-        }
-        return dest;
-    };
-
     function config() {
         return {
             promises : [],
@@ -154,7 +119,7 @@
             this.muteEndIfEmpty = !!options.emitEndIfEmpty;
             this.interval = options.interval || 0;
 
-            assign( this, config() );
+            Object.assign( this, config() );
 
             if( steps && steps.length ) {
                 this.append( steps );
@@ -204,7 +169,7 @@
         }
 
         clear() {
-            assign( this, config() );
+            Object.assign( this, config() );
         }
 
         next( inner = false ) {
@@ -312,7 +277,8 @@
 
         static all( ...args ) {
             const { steps, interval, cb } = parseArguments( ...args );
-            const sequence = new Sequence( steps, { interval } );
+            if( !steps.length ) return Promise.resolve( [] );
+            const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
 
             isFunction( cb ) && cb.call( sequence, sequence );
 
@@ -329,7 +295,8 @@
 
         static chain( ...args ) {
             const { steps, interval, cb } = parseArguments( ...args );
-            const sequence = new Sequence( steps, { interval } );
+            if( !steps.length ) return Promise.resolve( [] );
+            const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
             isFunction( cb ) && cb.call( sequence, sequence );
             return new Promise( resolve => {
                 sequence.on( 'end', results => {
@@ -340,7 +307,8 @@
 
         static any( ...args ) {
             const { steps, interval, cb } = parseArguments( ...args );
-            const sequence = new Sequence( steps, { interval } );
+            if( !steps.length ) return Promise.reject( [] );
+            const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
             isFunction( cb ) && cb.call( sequence, sequence );
             return new Promise( ( resolve, reject ) => {
                 sequence.on( 'success', () => {
@@ -360,7 +328,7 @@
 
     Sequence.Error = class {
         constructor( options ) {
-            assign( this, options );
+            Object.assign( this, options );
         }
     };
 
@@ -374,4 +342,4 @@
 
     return Sequence;
 
-})));
+}));

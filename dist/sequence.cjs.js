@@ -89,41 +89,6 @@ function isUndefined() {
     return arguments.length > 0 && typeof arguments[ 0 ] === 'undefined';
 }
 
-/**
- * async function
- *
- * @syntax: 
- *  async function() {}
- *  async () => {}
- *  async x() => {}
- *
- * @compatibility
- * IE: no
- * Edge: >= 15
- * Android: >= 5.0
- *
- */
-
-var isAsyncFunction$1 = fn => ( {} ).toString.call( fn ) === '[object AsyncFunction]';
-
-var isFunction$1 = fn => ({}).toString.call( fn ) === '[object Function]' || isAsyncFunction$1( fn );
-
-const assign = ( dest, ...sources ) => {
-    if( isFunction$1( Object.assign ) ) {
-        return Object.assign( dest, ...sources );
-    }
-    const obj = sources[ 0 ];
-    for( let property in obj ) {
-        if( obj.hasOwnProperty( property ) ) {
-            dest[ property ] = obj[ property ];
-        }
-    }
-    if( sources.length > 1 ) {
-        return assign( dest, ...sources.splice( 1, sources.length - 1 ) );
-    }
-    return dest;
-};
-
 function config() {
     return {
         promises : [],
@@ -150,7 +115,7 @@ class Sequence extends EventEmitter {
         this.muteEndIfEmpty = !!options.emitEndIfEmpty;
         this.interval = options.interval || 0;
 
-        assign( this, config() );
+        Object.assign( this, config() );
 
         if( steps && steps.length ) {
             this.append( steps );
@@ -200,7 +165,7 @@ class Sequence extends EventEmitter {
     }
 
     clear() {
-        assign( this, config() );
+        Object.assign( this, config() );
     }
 
     next( inner = false ) {
@@ -308,7 +273,8 @@ class Sequence extends EventEmitter {
 
     static all( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
-        const sequence = new Sequence( steps, { interval } );
+        if( !steps.length ) return Promise.resolve( [] );
+        const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
 
         isFunction( cb ) && cb.call( sequence, sequence );
 
@@ -325,7 +291,8 @@ class Sequence extends EventEmitter {
 
     static chain( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
-        const sequence = new Sequence( steps, { interval } );
+        if( !steps.length ) return Promise.resolve( [] );
+        const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
         isFunction( cb ) && cb.call( sequence, sequence );
         return new Promise( resolve => {
             sequence.on( 'end', results => {
@@ -336,7 +303,8 @@ class Sequence extends EventEmitter {
 
     static any( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
-        const sequence = new Sequence( steps, { interval } );
+        if( !steps.length ) return Promise.reject( [] );
+        const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
         isFunction( cb ) && cb.call( sequence, sequence );
         return new Promise( ( resolve, reject ) => {
             sequence.on( 'success', () => {
@@ -356,7 +324,7 @@ Sequence.FAILED = 0;
 
 Sequence.Error = class {
     constructor( options ) {
-        assign( this, options );
+        Object.assign( this, options );
     }
 };
 

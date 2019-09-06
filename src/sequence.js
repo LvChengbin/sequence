@@ -2,7 +2,6 @@ import EventEmitter from '@lvchengbin/event-emitter';
 import isFunction from '@lvchengbin/is/src/function';
 import isPromise from '@lvchengbin/is/src/promise';
 import isUndefined from'@lvchengbin/is/src/undefined';
-import assign from '@lvchengbin/kit/src/object-assign';
 
 function config() {
     return {
@@ -30,7 +29,7 @@ class Sequence extends EventEmitter {
         this.muteEndIfEmpty = !!options.emitEndIfEmpty;
         this.interval = options.interval || 0;
 
-        assign( this, config() );
+        Object.assign( this, config() );
 
         if( steps && steps.length ) {
             this.append( steps );
@@ -80,7 +79,7 @@ class Sequence extends EventEmitter {
     }
 
     clear() {
-        assign( this, config() );
+        Object.assign( this, config() );
     }
 
     next( inner = false ) {
@@ -188,7 +187,8 @@ class Sequence extends EventEmitter {
 
     static all( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
-        const sequence = new Sequence( steps, { interval } );
+        if( !steps.length ) return Promise.resolve( [] );
+        const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
 
         isFunction( cb ) && cb.call( sequence, sequence );
 
@@ -205,7 +205,8 @@ class Sequence extends EventEmitter {
 
     static chain( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
-        const sequence = new Sequence( steps, { interval } );
+        if( !steps.length ) return Promise.resolve( [] );
+        const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
         isFunction( cb ) && cb.call( sequence, sequence );
         return new Promise( resolve => {
             sequence.on( 'end', results => {
@@ -216,7 +217,8 @@ class Sequence extends EventEmitter {
 
     static any( ...args ) {
         const { steps, interval, cb } = parseArguments( ...args );
-        const sequence = new Sequence( steps, { interval } );
+        if( !steps.length ) return Promise.reject( [] );
+        const sequence = new Sequence( steps, { interval, muteEndIfEmpty : true } );
         isFunction( cb ) && cb.call( sequence, sequence );
         return new Promise( ( resolve, reject ) => {
             sequence.on( 'success', () => {
@@ -236,7 +238,7 @@ Sequence.FAILED = 0;
 
 Sequence.Error = class {
     constructor( options ) {
-        assign( this, options );
+        Object.assign( this, options );
     }
 };
 

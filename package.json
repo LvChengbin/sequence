@@ -1,6 +1,6 @@
 {
     "name": "@lvchengbin/sequence",
-    "version": "2.0.1",
+    "version": "2.0.3",
     "description": "A light library for executing multiple steps in sequence.",
     "keywords": [
         "sequence",
@@ -29,21 +29,21 @@
     "license": "MIT",
     "devDependencies": {
         "@lvchengbin/sleep": "0.0.2",
-        "eslint": "^5.4.0",
-        "jasmine-core": "^3.2.1",
-        "karma": "^3.0.0",
-        "karma-chrome-launcher": "^2.2.0",
-        "karma-jasmine": "^1.1.2",
-        "karma-rollup-preprocessor": "^6.0.1",
+        "eslint": "^6.3.0",
+        "jasmine-core": "^3.4.0",
+        "karma": "^4.3.0",
+        "karma-chrome-launcher": "^3.1.0",
+        "karma-jasmine": "^2.0.1",
+        "karma-rollup-preprocessor": "^7.0.2",
         "optimist": "^0.6.1",
         "pre-commit": "^1.2.2",
-        "puppeteer": "^1.8.0",
-        "rollup": "^0.64.1",
-        "rollup-plugin-node-resolve": "^3.3.0"
+        "puppeteer": "^1.19.0",
+        "rollup": "^1.20.3",
+        "rollup-plugin-node-resolve": "^5.2.0"
     },
     "dependencies": {
-        "@lvchengbin/event-emitter": "^1.0.0",
-        "@lvchengbin/is": "0.0.23",
+        "@lvchengbin/event-emitter": "^1.0.1",
+        "@lvchengbin/is": "0.0.27",
         "@lvchengbin/kit": "0.0.2"
     }
 }
